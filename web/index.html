@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reverse Code Arena</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo-icon">⚡</div>
+        <div>
+          <h1 class="app-title">Reverse Code Arena</h1>
+          <p class="app-subtitle">Research-Grounded Pedagogical Debugger &middot; Zhang (2026) & Zhao et al. (2026)</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <span class="badge badge-difficulty" id="badge-difficulty">Difficulty: Easy</span>
+        <button class="btn btn-secondary" id="btn-refresh" title="Reload Challenge">
+          <span class="refresh-icon">↻</span> Reload
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="main-layout">
+      <!-- Left Column: Task Info & Code Viewer -->
+      <section class="code-column">
+        <!-- Task Description Card -->
+        <div class="card task-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="card-tag">Task Specification</span>
+              <h2 class="function-title" id="function-name">find_max(...)</h2>
+            </div>
+            <span class="badge badge-bug" id="bug-type-badge">bug: off_by_one</span>
+          </div>
+          <p class="task-description" id="task-desc">
+            Loading challenge specification...
+          </p>
+
+          <div class="passing-tests-container">
+            <span class="tests-label">Passing Unit Tests (Code passes these, but fails on an edge case):</span>
+            <div class="test-pills" id="test-pills-list">
+              <span class="test-pill">Loading tests...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Code Viewer Card -->
+        <div class="card code-card">
+          <div class="code-card-header">
+            <div class="code-meta">
+              <span class="file-icon">🐍</span>
+              <span class="filename">solution.py</span>
+              <span class="badge badge-hint">Click a line to select bug location</span>
+            </div>
+            <div class="selected-indicator" id="selected-indicator">
+              No line selected
+            </div>
+          </div>
+          
+          <div class="code-viewer-container" id="code-container">
+            <div class="loading-state">
+              <div class="spinner"></div>
+              <span>Fetching challenge code from API...</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Submission Form Placeholder (Turn 4) -->
+      <aside class="submission-column">
+        <div class="card form-card">
+          <div class="card-header">
+            <div>
+              <span class="card-tag">Evaluation Portal</span>
+              <h2 class="section-title">Hypothesis & Fix</h2>
+            </div>
+            <span class="badge badge-turn">Turn 4 Placeholder</span>
+          </div>
+
+          <p class="placeholder-notice">
+            Select the buggy line from the code on the left. In <strong>Turn 4</strong>, this form will be fully wired with the two-tier Hypothesis-First scaffolding and real-time Pedagogical CoT evaluation.
+          </p>
+
+          <div class="selected-line-banner" id="form-selected-banner">
+            <span class="banner-icon">🎯</span>
+            <div>
+              <div class="banner-label">Selected Buggy Line</div>
+              <div class="banner-value" id="form-selected-line">None selected (click a line)</div>
+            </div>
+          </div>
+
+          <!-- Placeholder Form Controls (Disabled preview) -->
+          <form class="attempt-form" onsubmit="return false;">
+            <!-- Feature 1: Expected Behavior -->
+            <div class="form-group">
+              <label for="input-expected">
+                <span class="form-label-title">1. Expected Behavior (Zhang Ch. 3)</span>
+                <span class="form-label-desc">What should this line/section have done?</span>
+              </label>
+              <textarea id="input-expected" rows="2" placeholder="e.g., The loop should iterate over all indices up to len(numbers) - 1..." disabled></textarea>
+            </div>
+
+            <!-- Feature 1: Observed Flaw -->
+            <div class="form-group">
+              <label for="input-observed">
+                <span class="form-label-title">2. Observed Flaw</span>
+                <span class="form-label-desc">What did it actually do that caused the edge case to fail?</span>
+              </label>
+              <textarea id="input-observed" rows="2" placeholder="e.g., range(len - 1) excludes the last element index..." disabled></textarea>
+            </div>
+
+            <!-- Flawed Mental Model Explanation -->
+            <div class="form-group">
+              <label for="input-explanation">
+                <span class="form-label-title">3. Underlying Flawed Mental Model</span>
+                <span class="form-label-desc">Explain the false assumption the author made</span>
+              </label>
+              <textarea id="input-explanation" rows="2" placeholder="e.g., The author assumed range(n) is inclusive of the upper bound..." disabled></textarea>
+            </div>
+
+            <!-- Replacement Code Line -->
+            <div class="form-group">
+              <label for="input-fix">
+                <span class="form-label-title">4. Replacement Code Line</span>
+                <span class="form-label-desc">Single-line corrected code</span>
+              </label>
+              <input type="text" id="input-fix" class="code-input" placeholder="e.g., for i in range(len(numbers)):" disabled />
+            </div>
+
+            <!-- Submit Button Placeholder -->
+            <button class="btn btn-primary btn-submit" id="btn-submit" disabled>
+              Submit Attempt (Wired in Turn 4)
+            </button>
+          </form>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <span>Reverse Code Arena &middot; Grounded in Zhang (WSU, 2026) & Zhao, Knežević, & Käser (EPFL/UTokyo, 2026)</span>
+      <span class="footer-status" id="server-status">API: Connected (http://localhost:8000)</span>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

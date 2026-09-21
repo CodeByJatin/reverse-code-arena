@@ -1,0 +1,22 @@
+[
+  "find the median of a list of numbers",
+  "merge two sorted lists into one sorted list",
+  "count frequency of each word in a string",
+  "compute a running average of streaming numbers",
+  "validate whether a date string is in YYYY-MM-DD format",
+  "find the longest substring without repeating characters",
+  "group anagrams from a list of words into clusters",
+  "rotate an N x N matrix 90 degrees clockwise",
+  "compress a string using run-length encoding (e.g., a3b2c1)",
+  "evaluate a postfix reverse Polish notation arithmetic expression",
+  "find all pairs in an integer array that sum to a target value",
+  "flatten a deeply nested dictionary into dot-separated keys",
+  "determine if brackets and parentheses in a string are balanced",
+  "calculate the Levenshtein edit distance between two strings",
+  "clamp and normalize numerical sensor readings to a 0-1 range",
+  "merge overlapping time intervals in an appointment schedule",
+  "find the majority element that appears more than half the time in a list",
+  "convert an integer into its Roman numeral representation",
+  "detect if a directed graph represented as an adjacency list contains a cycle",
+  "calculate the exponential moving average (EMA) for a time series"
+]
