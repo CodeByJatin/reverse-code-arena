@@ -9,13 +9,13 @@ class TestCase(BaseModel):
 
 class Challenge(BaseModel):
     id: str
-    task_description: str  # what the fn is supposed to do (shown to student)
+    task_description: str  # What the function is supposed to do
     function_name: str
-    code: str  # full runnable python
+    code: str  # Full runnable Python
     num_lines: int
-    bug_type: str  # from catalogue
+    bug_type: str  # From catalogue
     buggy_line_number: int  # 1-indexed
-    flawed_assumption: str  # ground truth for grading
+    flawed_assumption: str  # Ground truth for grading
     passing_tests: List[TestCase]
     edge_case_test: TestCase
     correct_line: str
@@ -46,6 +46,9 @@ class PublicChallenge(BaseModel):
 class Attempt(BaseModel):
     challenge_id: str
     selected_line: int
+    # Feature 1 (Zhang, 2026): Hypothesis-First Scaffolding
+    expected_behavior: Optional[str] = Field(None, description="What the student expected this line to do")
+    observed_flaw: Optional[str] = Field(None, description="What the student observed it actually doing")
     explanation: str
     fixed_code: str
 
@@ -59,6 +62,9 @@ class DetectionResult(BaseModel):
 class ComprehensionResult(BaseModel):
     score: int  # 0 to 3
     feedback: str
+    # Feature 3 (Zhao et al., 2026): Internal pedagogical CoT (hidden from student)
+    reason: Optional[str] = None
+    leak_check: Optional[str] = None
 
 
 class Result(BaseModel):
