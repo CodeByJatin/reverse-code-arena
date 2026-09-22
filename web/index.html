@@ -15,7 +15,12 @@
     <header class="topbar">
       <div class="topbar-left">
         <div class="brand">
-          <span class="brand-logo">⚡</span>
+          <div class="brand-logo" title="Reverse Code Arena">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 18 22 12 16 6"></polyline>
+              <polyline points="8 6 2 12 8 18"></polyline>
+            </svg>
+          </div>
           <div class="brand-info">
             <span class="brand-name">Reverse Code Arena</span>
             <span class="brand-citation">Zhang (2026) &middot; Zhao et al. (2026)</span>
@@ -23,22 +28,52 @@
         </div>
         <div class="topbar-divider"></div>
         <div class="challenge-pill-group">
-          <span class="badge badge-difficulty" id="badge-difficulty">Easy</span>
-          <span class="badge badge-bug" id="bug-type-badge">Bug: Scanning...</span>
+          <span class="badge badge-difficulty" id="badge-difficulty" data-tooltip="Challenge difficulty tier based on fault complexity">Easy</span>
+          <span class="badge badge-bug" id="bug-type-badge" data-tooltip="Defect classification seeded in this verification challenge">Bug: Scanning...</span>
         </div>
       </div>
 
       <div class="topbar-right">
+        <!-- Light / Dark Theme Mode Toggle -->
+        <button class="btn btn-tool theme-toggle-btn" id="btn-theme-toggle" title="Toggle Light or Dark theme" aria-label="Toggle Theme">
+          <svg id="theme-icon-dark" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <span id="theme-text">Light Mode</span>
+        </button>
+
         <!-- Session Controls -->
-        <button class="btn btn-tool" id="btn-pause" title="Pause session to take a breath (freezes timer)">
-          <span class="btn-icon">⏸</span> Pause
+        <button class="btn btn-tool" id="btn-pause" title="Pause session to take a breath (freezes cognitive timers)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="6" y="4" width="4" height="16"></rect>
+            <rect x="14" y="4" width="4" height="16"></rect>
+          </svg>
+          <span>Pause</span>
         </button>
-        <button class="btn btn-tool" id="btn-refresh" title="Load another verified challenge">
-          <span class="btn-icon">↻</span> New Task
+        <button class="btn btn-tool" id="btn-refresh" title="Load next verified challenge">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+          <span>New Task</span>
         </button>
-        <button class="btn btn-tool" id="btn-stats" title="View Verification & Security Audit Stats">
-          <span class="btn-icon">📊</span> Stats
+        <button class="btn btn-tool" id="btn-stats" title="View Verification and Security Audit Stats">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+          <span>Stats</span>
         </button>
+
         <div class="topbar-divider"></div>
         <div class="status-indicator" id="server-status" title="Backend API status">
           <span class="status-dot"></span>
@@ -49,32 +84,63 @@
 
     <!-- Main Workspace (2-Column IDE Split) -->
     <main class="workspace-main">
-      <!-- Left Pane: Problem Spec & Test Suite (38% width) -->
+      <!-- Left Pane: Tabbed Problem Spec, Unit Tests & Strategy Guide (38% width) -->
       <aside class="pane pane-left">
-        <div class="pane-header">
-          <div class="pane-title">
-            <span class="icon">📋</span> Specification & Unit Tests
-          </div>
-        </div>
+        <!-- Tab Navigation Bar -->
+        <nav class="tab-nav" role="tablist">
+          <button class="tab-btn active" data-tab="tab-spec" role="tab" id="tab-btn-spec" aria-selected="true" data-tooltip="Formal contract & problem description">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span>Specification</span>
+          </button>
+          <button class="tab-btn" data-tab="tab-tests" role="tab" id="tab-btn-tests" aria-selected="false" data-tooltip="Passing suite inputs & expected returns">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 11 12 14 22 4"></polyline>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+            <span>Unit Tests <span id="test-count-badge" class="selection-pill" style="padding: 0.1rem 0.4rem; font-size: 0.68rem;">3</span></span>
+          </button>
+          <button class="tab-btn" data-tab="tab-guide" role="tab" id="tab-btn-guide" aria-selected="false" data-tooltip="Zhang (2026) G4 concrete tracing protocol">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <span>Strategy Guide</span>
+          </button>
+        </nav>
 
-        <div class="pane-content">
-          <!-- Contract Box -->
-          <div class="spec-section">
-            <div class="section-label">Function Contract</div>
-            <div class="function-signature-box">
-              <code class="function-sig" id="function-name">find_max(...)</code>
+        <div class="tab-content-container">
+          <!-- Tab 1: Specification -->
+          <div class="tab-pane active" id="tab-spec" role="tabpanel">
+            <div class="spec-box">
+              <div class="spec-header">
+                <span class="section-label" data-tooltip="Target function signature and parameters">Function Contract</span>
+                <span class="badge badge-bug" id="spec-bug-badge" data-tooltip="Target defect category seeded in this challenge">Defect Class</span>
+              </div>
+              <div class="function-signature-box">
+                <code class="function-sig" id="function-name">find_max(...)</code>
+              </div>
+              <p class="task-description-text" id="task-desc">
+                Loading challenge specification...
+              </p>
             </div>
-            <p class="task-description-text" id="task-desc">
-              Loading challenge specification...
-            </p>
           </div>
 
-          <!-- Unit Tests Table -->
-          <div class="spec-section">
-            <div class="section-label">Passing Unit Tests</div>
-            <p class="section-subtext">The implementation passes all test cases below, but fails on a hidden edge case:</p>
-            
-            <div class="table-wrapper">
+          <!-- Tab 2: Passing Unit Tests -->
+          <div class="tab-pane" id="tab-tests" role="tabpanel">
+            <div class="test-table-container">
+              <div style="padding: 0.85rem 1rem 0.5rem 1rem;">
+                <span class="section-label" data-tooltip="Baseline test suite validated against correct implementation">Passing Unit Tests</span>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem;">
+                  The candidate code passes each baseline test below, but fails on an unhandled edge case:
+                </p>
+              </div>
               <table class="test-table">
                 <thead>
                   <tr>
@@ -93,20 +159,28 @@
             </div>
           </div>
 
-          <!-- Cognitive Scaffolding Drawer (Zhang Ch. 3 & 4 G4 Concrete Tracing) -->
-          <div class="spec-section scaffolding-drawer">
-            <div class="drawer-header" id="drawer-toggle">
-              <span class="drawer-title">
-                <span class="icon">💡</span> Tracing Strategy Guide (Zhang, 2026)
-              </span>
-              <span class="drawer-chevron">▾</span>
-            </div>
-            <div class="drawer-body" id="drawer-body">
-              <p>Research shows 42.1% of novices fail by endlessly re-reading without a hypothesis. Follow the <strong>G4 Systematic Tracing Protocol</strong>:</p>
-              <ol class="scaffolding-steps">
-                <li><strong>Anchor at Entry Point:</strong> Pick the 1st passing test input and trace variable state updates line-by-line.</li>
-                <li><strong>Hypothesize Discrepancy:</strong> What did the author assume would happen vs. what the language semantics actually do?</li>
-                <li><strong>Verify Minimal Fix:</strong> Formulate your 1-line change before testing.</li>
+          <!-- Tab 3: Strategy Guide (Zhang 2026 G4 Systematic Tracing) -->
+          <div class="tab-pane" id="tab-guide" role="tabpanel">
+            <div class="strategy-card">
+              <div class="section-label" data-tooltip="Empirical findings from computing education research (Zhang, WSU 2026)">
+                G4 Tracing Methodology
+              </div>
+              <p style="font-size: 0.84rem; color: var(--text-secondary); line-height: 1.5;">
+                Research shows 42.1% of novices fail by repeatedly re-reading without a structured hypothesis. Follow the three-step systematic tracing protocol:
+              </p>
+              <ol class="strategy-steps">
+                <li>
+                  <strong>1. Anchor at Entry Point:</strong>
+                  <span>Pick the first passing unit test input and track variable states line-by-line from invocation.</span>
+                </li>
+                <li>
+                  <strong>2. Formulate Mental Model Discrepancy:</strong>
+                  <span>Contrast what the author assumed would happen against how Python language semantics actually evaluate the boundary case.</span>
+                </li>
+                <li>
+                  <strong>3. Verify Minimal Fix:</strong>
+                  <span>Compose a single-line correction that repairs the edge case without regressing baseline test behavior.</span>
+                </li>
               </ol>
             </div>
           </div>
@@ -119,11 +193,11 @@
         <div class="code-inspector-panel">
           <div class="editor-header">
             <div class="editor-tab active">
-              <span class="lang-icon">🐍</span>
+              <span style="font-size: 0.75rem; font-weight: 600; color: var(--accent-cyan); background: rgba(56, 189, 248, 0.1); padding: 0.1rem 0.35rem; border-radius: 3px;">PY</span>
               <span class="tab-filename">solution.py</span>
             </div>
             <div class="editor-actions">
-              <span class="selection-pill" id="selected-indicator">Click a line to locate fault</span>
+              <span class="selection-pill" id="selected-indicator" data-tooltip="Click any line number or code statement in the inspector to target it">Click a line to locate fault</span>
             </div>
           </div>
 
@@ -138,8 +212,8 @@
         <!-- Lower Section: Fault Diagnosis & Fix Console (Bottom Dock) -->
         <div class="diagnosis-console">
           <div class="console-header">
-            <div class="console-title">
-              <span class="icon">🎯</span> Fault Diagnosis & Fix Console
+            <div class="console-title" data-tooltip="Structured diagnostic inputs based on Zhang (2026) hypothesis-first schema">
+              Fault Diagnosis & Fix Console
             </div>
             <div class="console-selected-line" id="console-selected-banner">
               Target: <span class="highlight-line-val" id="form-selected-line">No line selected</span>
@@ -148,7 +222,13 @@
 
           <!-- Empty State when no line selected -->
           <div class="console-empty-prompt" id="console-empty-state">
-            <div class="empty-icon">👆</div>
+            <div class="empty-icon" style="color: var(--accent-cyan);">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
             <div class="empty-title">Select a line from the code above</div>
             <div class="empty-subtitle">Click the line number or code statement where you believe the author made a flawed assumption.</div>
           </div>
@@ -160,18 +240,18 @@
               <div class="console-col">
                 <div class="field-group">
                   <label for="input-expected">
-                    <span class="field-title">1. Expected Behavior</span>
-                    <span class="field-desc">What was this line supposed to do?</span>
+                    <span class="field-title" data-tooltip="What the author intended this statement to compute">1. Expected Behavior</span>
+                    <span class="field-desc">Intended operation for this statement</span>
                   </label>
-                  <input type="text" id="input-expected" class="text-input" placeholder="e.g. Iterate over all list elements including the last one" />
+                  <input type="text" id="input-expected" class="text-input" placeholder="e.g. Iterate through all list items including the last one" />
                 </div>
 
                 <div class="field-group">
                   <label for="input-observed">
-                    <span class="field-title">2. Observed Flaw</span>
-                    <span class="field-desc">What actually occurs on the edge case?</span>
+                    <span class="field-title" data-tooltip="Runtime failure mode or boundary edge-case triggered by this line">2. Observed Flaw</span>
+                    <span class="field-desc">Actual boundary failure at runtime</span>
                   </label>
-                  <input type="text" id="input-observed" class="text-input" placeholder="e.g. range(len - 1) terminates 1 step too early" />
+                  <input type="text" id="input-observed" class="text-input" placeholder="e.g. range(len - 1) terminates 1 element too early" />
                 </div>
               </div>
 
@@ -179,16 +259,16 @@
               <div class="console-col">
                 <div class="field-group">
                   <label for="input-explanation">
-                    <span class="field-title">3. Author's Flawed Assumption</span>
-                    <span class="field-desc">The underlying misconception being tested</span>
+                    <span class="field-title" data-tooltip="The cognitive misconception or false rule assumed by the author">3. Flawed Assumption</span>
+                    <span class="field-desc">Author's misconception being audited</span>
                   </label>
-                  <input type="text" id="input-explanation" class="text-input" placeholder="e.g. Assumed range(n) is inclusive of the upper boundary" />
+                  <input type="text" id="input-explanation" class="text-input" placeholder="e.g. Assumed range(n) is inclusive of the upper bound" />
                 </div>
 
                 <div class="field-group">
                   <label for="input-fix">
-                    <span class="field-title">4. Replacement Line (1-Line Fix)</span>
-                    <span class="field-desc">Clean single-line correction</span>
+                    <span class="field-title" data-tooltip="Single-line replacement that will be dynamically substituted and verified">4. Replacement Line (1-Line Fix)</span>
+                    <span class="field-desc">Clean single-line code correction</span>
                   </label>
                   <input type="text" id="input-fix" class="code-input" placeholder="e.g. for i in range(len(numbers)):" />
                 </div>
@@ -198,12 +278,12 @@
             <!-- Console Action Bar -->
             <div class="console-actions">
               <div class="shortcut-hint">
-                Tip: Press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to submit
+                Shortcut: <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to submit
               </div>
               <div class="actions-group">
                 <button type="button" class="btn btn-secondary" id="btn-reset-form">Reset</button>
                 <button type="button" class="btn btn-primary btn-cta" id="btn-submit">
-                  ⚡ Submit Analysis & Verify Fix
+                  Submit Analysis & Verify Fix
                 </button>
               </div>
             </div>
@@ -215,17 +295,17 @@
     <!-- Bottom Status Footer -->
     <footer class="workbench-footer">
       <div class="footer-left">
-        <span>Reverse Code Arena &middot; Grounded in <em>Zhang (WSU, 2026)</em> & <em>Zhao et al. (EPFL/UTokyo, 2026)</em></span>
+        <span>Reverse Code Arena &middot; Grounded in <em>Zhang (WSU, 2026)</em> &amp; <em>Zhao et al. (EPFL/UTokyo, 2026)</em></span>
       </div>
       <div class="footer-right">
-        <span class="footer-tag">Sandboxed Subprocess Execution (5s Timeout)</span>
-        <span class="footer-tag">Zero-Leakage Pedagogical CoT</span>
+        <span class="footer-tag" data-tooltip="Isolated execution container with 5s timeout protection">Sandboxed Subprocess Execution</span>
+        <span class="footer-tag" data-tooltip="Zhao et al. anti-leakage Chain-of-Thought grading filter">Zero-Leakage Pedagogical CoT</span>
       </div>
     </footer>
   </div>
 
   <!-- ========================================================================
-       MODALS & OVERLAYS
+       MODALS & OVERLAYS (Glassmorphic surfaces with cultural folding backdrop)
        ======================================================================== -->
 
   <!-- 1. Context-First Welcome Briefing Overlay -->
@@ -238,7 +318,7 @@
 
       <div class="briefing-body">
         <p class="briefing-intro">
-          Most coders are trained to write blank-slate code, but real engineering requires <strong>auditing code written by others or LLMs</strong>.
+          Most programmers are trained to write blank-slate code, but modern software engineering demands <strong>auditing and debugging code produced by others and AI agents</strong>.
         </p>
 
         <div class="briefing-grid">
@@ -246,7 +326,7 @@
             <div class="step-num">1</div>
             <div class="step-content">
               <h4>The Hidden Flaw</h4>
-              <p>The code compiles and passes typical unit tests, but embodies a subtle <strong>flawed mental model</strong> that fails an edge case.</p>
+              <p>The code compiles and passes baseline unit tests, but embodies an authorial <strong>misconception</strong> that fails on a critical edge case.</p>
             </div>
           </div>
 
@@ -254,7 +334,7 @@
             <div class="step-num">2</div>
             <div class="step-content">
               <h4>Hypothesis-First Audit</h4>
-              <p>Pinpoint the faulty line, articulate the author's false assumption (why they made it), and propose a 1-line surgical fix.</p>
+              <p>Pinpoint the faulty line, articulate the author's false mental rule, and formulate a 1-line surgical correction.</p>
             </div>
           </div>
 
@@ -262,15 +342,15 @@
             <div class="step-num">3</div>
             <div class="step-content">
               <h4>Dual-Axis Evaluation</h4>
-              <p>You are scored separately on <strong>Fault Detection</strong> and <strong>Conceptual Comprehension</strong> to expose "patching without understanding."</p>
+              <p>You are scored separately on <strong>Fault Detection</strong> and <strong>Conceptual Comprehension</strong> to expose patching without understanding.</p>
             </div>
           </div>
         </div>
       </div>
 
       <div class="modal-actions briefing-actions">
-        <button class="btn btn-primary btn-start" id="btn-start-review">
-          🚀 Start Code Review
+        <button class="btn btn-primary btn-cta btn-start" id="btn-start-review">
+          Start Code Review
         </button>
       </div>
     </div>
@@ -279,11 +359,17 @@
   <!-- 2. Session Paused Overlay -->
   <div class="modal-backdrop" id="pause-overlay" style="display: none;">
     <div class="modal-card pause-card">
-      <div class="pause-icon">☕</div>
+      <div class="pause-icon" style="color: var(--accent-cyan); margin-bottom: 0.75rem;">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="10" y1="15" x2="10" y2="9"></line>
+          <line x1="14" y1="15" x2="14" y2="9"></line>
+        </svg>
+      </div>
       <h2 class="modal-title">Review Paused</h2>
-      <p class="pause-text">Take a breath. The cognitive timers and task tracking are suspended while you rest.</p>
+      <p class="pause-text">Cognitive timers and interaction tracking are paused while you rest.</p>
       <button class="btn btn-primary btn-cta" id="btn-resume-review">
-        ▶ Resume Review
+        Resume Review
       </button>
     </div>
   </div>
@@ -298,13 +384,13 @@
 
       <!-- Dual-Axis Badges -->
       <div class="verdict-badges-row">
-        <div class="verdict-badge" id="badge-detection">
+        <div class="verdict-badge" id="badge-detection" data-tooltip="Axis 1: Checks whether the selected line matches the seeded defect">
           <span class="badge-subtitle">Axis 1: Detection</span>
           <span class="badge-main-text" id="detection-text">Line Check</span>
         </div>
-        <div class="verdict-badge" id="badge-comprehension">
+        <div class="verdict-badge" id="badge-comprehension" data-tooltip="Axis 2: Zhao et al. zero-leakage conceptual comprehension rubric (0 to 3)">
           <span class="badge-subtitle">Axis 2: Comprehension</span>
-          <span class="badge-main-text" id="comprehension-text">Score 0/3</span>
+          <span class="badge-main-text" id="comprehension-text">Score 0 / 3</span>
         </div>
       </div>
 
@@ -316,13 +402,13 @@
 
       <!-- Pedagogical CoT Feedback (Zhao et al.) -->
       <div class="feedback-card">
-        <div class="feedback-label">Pedagogical Evaluation (Zero-Leakage Guarded):</div>
+        <div class="feedback-label">Pedagogical Feedback (Zero-Leakage Guarded):</div>
         <p class="feedback-body" id="modal-feedback">Feedback message...</p>
       </div>
 
       <div class="modal-actions">
         <button class="btn btn-secondary" id="btn-close-modal">Inspect Code</button>
-        <button class="btn btn-primary btn-cta" id="btn-next-challenge">Next Challenge ➔</button>
+        <button class="btn btn-primary btn-cta" id="btn-next-challenge">Next Challenge</button>
       </div>
     </div>
   </div>
@@ -359,12 +445,18 @@
   <!-- 5. Feature 2: Anti-Stagnation Scaffold Nudge (Zhang Ch. 3 & 4) -->
   <div class="stagnation-toast" id="stagnation-toast" style="display: none;">
     <div class="stagnation-header">
-      <span class="stagnation-icon">💡</span>
-      <strong>Cognitive Scaffolding Nudge (Zhang, 2026)</strong>
+      <div style="display: flex; align-items: center; gap: 0.4rem;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <strong>Cognitive Scaffolding Nudge (Zhang, 2026)</strong>
+      </div>
       <button class="toast-close" id="toast-close">&times;</button>
     </div>
     <p id="stagnation-msg">
-      You have been reading for a while. Rather than scanning the whole file repeatedly, trace the first unit test input line-by-line from the entry point!
+      You have been reading for an extended period. Rather than repeatedly scanning the entire file, trace the first unit test input line-by-line from the entry point.
     </p>
   </div>
 

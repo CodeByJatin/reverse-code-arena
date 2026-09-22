@@ -23,13 +23,19 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initWorkbench() {
-  // 1. Context Briefing Start Button
+  // 1. Theme Mode Management (Light / Dark with localStorage persistence)
+  initTheme();
+
+  // 2. Tab Navigation System
+  initTabs();
+
+  // 3. Context Briefing Start Button
   const startBtn = document.getElementById('btn-start-review');
   if (startBtn) {
     startBtn.addEventListener('click', startReviewSession);
   }
 
-  // 2. Pause / Resume Controls
+  // 4. Pause / Resume Controls
   const pauseBtn = document.getElementById('btn-pause');
   if (pauseBtn) {
     pauseBtn.addEventListener('click', togglePauseSession);
@@ -39,7 +45,7 @@ function initWorkbench() {
     resumeBtn.addEventListener('click', resumeSession);
   }
 
-  // 3. New Task Reload Button
+  // 5. New Task Reload Button
   const refreshBtn = document.getElementById('btn-refresh');
   if (refreshBtn) {
     refreshBtn.addEventListener('click', () => {
@@ -47,7 +53,7 @@ function initWorkbench() {
     });
   }
 
-  // 4. Platform Stats Modal
+  // 6. Platform Stats Modal
   const statsBtn = document.getElementById('btn-stats');
   if (statsBtn) {
     statsBtn.addEventListener('click', openStatsModal);
@@ -57,7 +63,7 @@ function initWorkbench() {
     closeStatsBtn.addEventListener('click', closeStatsModal);
   }
 
-  // 5. Submit & Reset Actions
+  // 7. Submit & Reset Actions
   const submitBtn = document.getElementById('btn-submit');
   if (submitBtn) {
     submitBtn.addEventListener('click', handleAttemptSubmit);
@@ -67,7 +73,7 @@ function initWorkbench() {
     resetBtn.addEventListener('click', resetForm);
   }
 
-  // 6. Result Modal Actions
+  // 8. Result Modal Actions
   const nextBtn = document.getElementById('btn-next-challenge');
   if (nextBtn) {
     nextBtn.addEventListener('click', () => {
@@ -80,23 +86,7 @@ function initWorkbench() {
     closeModalBtn.addEventListener('click', closeResultModal);
   }
 
-  // 7. Scaffolding Drawer Accordion Toggle
-  const drawerToggle = document.getElementById('drawer-toggle');
-  if (drawerToggle) {
-    drawerToggle.addEventListener('click', () => {
-      const body = document.getElementById('drawer-body');
-      const chevron = drawerToggle.querySelector('.drawer-chevron');
-      if (body.style.display === 'none') {
-        body.style.display = 'block';
-        chevron.textContent = '▾';
-      } else {
-        body.style.display = 'none';
-        chevron.textContent = '▸';
-      }
-    });
-  }
-
-  // 8. Stagnation Toast Close
+  // 9. Stagnation Toast Close
   const toastClose = document.getElementById('toast-close');
   if (toastClose) {
     toastClose.addEventListener('click', () => {
@@ -104,7 +94,7 @@ function initWorkbench() {
     });
   }
 
-  // 9. Keyboard Shortcuts (Ctrl+Enter / Cmd+Enter to submit, Esc to close modals)
+  // 10. Keyboard Shortcuts (Ctrl+Enter / Cmd+Enter to submit, Esc to close modals)
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       if (isSessionActive && !isPaused && selected_line) {
@@ -119,6 +109,87 @@ function initWorkbench() {
 
   // Preload initial challenge data in background
   fetchChallenge(false);
+}
+
+/**
+ * Initialize Light / Dark Mode Toggle with persistence
+ */
+function initTheme() {
+  const savedTheme = localStorage.getItem('rca_theme') || 'dark';
+  applyTheme(savedTheme);
+
+  const toggleBtn = document.getElementById('btn-theme-toggle');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const isCurrentlyLight = document.body.classList.contains('theme-light');
+      const targetTheme = isCurrentlyLight ? 'dark' : 'light';
+      applyTheme(targetTheme);
+      localStorage.setItem('rca_theme', targetTheme);
+    });
+  }
+}
+
+function applyTheme(theme) {
+  const themeText = document.getElementById('theme-text');
+  const toggleBtn = document.getElementById('btn-theme-toggle');
+
+  if (theme === 'light') {
+    document.body.classList.add('theme-light');
+    if (themeText) themeText.textContent = 'Dark Mode';
+    if (toggleBtn) {
+      toggleBtn.title = 'Switch to Dark Mode (Solid Black)';
+      toggleBtn.innerHTML = `
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+        <span id="theme-text">Dark Mode</span>
+      `;
+    }
+  } else {
+    document.body.classList.remove('theme-light');
+    if (themeText) themeText.textContent = 'Light Mode';
+    if (toggleBtn) {
+      toggleBtn.title = 'Switch to Light Mode (Warm Beige)';
+      toggleBtn.innerHTML = `
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <span id="theme-text">Light Mode</span>
+      `;
+    }
+  }
+}
+
+/**
+ * Initialize Tabbed Interface in the Left Pane
+ */
+function initTabs() {
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetTabId = btn.getAttribute('data-tab');
+      if (!targetTabId) return;
+
+      tabButtons.forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+      const targetPane = document.getElementById(targetTabId);
+      if (targetPane) targetPane.classList.add('active');
+    });
+  });
 }
 
 /**
@@ -169,7 +240,9 @@ async function fetchChallenge(startTimer = true) {
   const taskDescEl = document.getElementById('task-desc');
   const funcNameEl = document.getElementById('function-name');
   const bugBadgeEl = document.getElementById('bug-type-badge');
+  const specBugBadge = document.getElementById('spec-bug-badge');
   const testTableBody = document.getElementById('test-table-body');
+  const testCountBadge = document.getElementById('test-count-badge');
   const serverStatus = document.getElementById('server-status');
 
   // Reset state
@@ -189,7 +262,7 @@ async function fetchChallenge(startTimer = true) {
   codeContainer.innerHTML = `
     <div class="loading-state">
       <div class="spinner"></div>
-      <span>Loading challenge specification and code...</span>
+      <span>Loading challenge specification and verified source...</span>
     </div>
   `;
 
@@ -205,17 +278,23 @@ async function fetchChallenge(startTimer = true) {
     // Render metadata
     funcNameEl.textContent = `${challenge.function_name}(...)`;
     bugBadgeEl.textContent = `Bug: ${challenge.bug_type}`;
+    if (specBugBadge) {
+      specBugBadge.textContent = challenge.bug_type;
+    }
     taskDescEl.textContent = challenge.task_description;
 
-    // Render unit test table
+    // Render unit test table & update badge count
     renderUnitTestTable(challenge.passing_tests, testTableBody);
+    if (testCountBadge && challenge.passing_tests) {
+      testCountBadge.textContent = challenge.passing_tests.length;
+    }
 
     // Render code in inspector
     renderCode(challenge.code);
 
     if (serverStatus) {
       serverStatus.querySelector('.status-dot').style.backgroundColor = 'var(--accent-emerald)';
-      serverStatus.querySelector('.status-text').textContent = 'API: Connected';
+      serverStatus.querySelector('.status-text').textContent = 'Connected';
     }
   } catch (error) {
     console.error('Error fetching challenge:', error);
@@ -231,7 +310,7 @@ async function fetchChallenge(startTimer = true) {
 
     if (serverStatus) {
       serverStatus.querySelector('.status-dot').style.backgroundColor = 'var(--accent-rose)';
-      serverStatus.querySelector('.status-text').textContent = 'API: Disconnected';
+      serverStatus.querySelector('.status-text').textContent = 'Disconnected';
     }
   }
 }
@@ -255,7 +334,7 @@ function renderUnitTestTable(passingTests, tbody) {
         <td style="color: var(--text-dim);">${idx + 1}</td>
         <td><code>${escapeHtml(inputFormatted)}</code></td>
         <td><code>${escapeHtml(expectedFormatted)}</code></td>
-        <td><span class="test-pass-tag">PASS &#10003;</span></td>
+        <td><span class="test-pass-tag">PASS</span></td>
       </tr>
     `;
   }).join('');
@@ -407,8 +486,8 @@ function showStagnationNudge() {
     : 'sample input';
 
   msg.innerHTML = `
-    <strong>Stuck in a reading loop? (Zhang, 2026):</strong> Rather than scanning the whole file repeatedly, 
-    start at the function entry point with input <code>${escapeHtml(firstTest)}</code>. Trace intermediate variable states line-by-line to form a concrete hypothesis!
+    <strong>Systematic Tracing Protocol (Zhang, 2026):</strong> Rather than repeatedly scanning the entire file, 
+    anchor at the function entry point using input <code>${escapeHtml(firstTest)}</code>. Trace variable states line-by-line to verify your hypothesis.
   `;
   toast.style.display = 'block';
 }
@@ -423,7 +502,7 @@ function hideStagnationNudge() {
  */
 async function handleAttemptSubmit() {
   if (!selected_line) {
-    alert('Please click on a code line to select where the bug is located.');
+    alert('Please click on a code line in the inspector to select the fault location.');
     return;
   }
 
@@ -434,7 +513,7 @@ async function handleAttemptSubmit() {
   const submitBtn = document.getElementById('btn-submit');
 
   if (!explInput && !expInput && !obsInput) {
-    alert('Please enter your hypothesis or explanation before submitting.');
+    alert('Please enter your analysis or hypothesis before submitting.');
     return;
   }
 
@@ -475,7 +554,7 @@ async function handleAttemptSubmit() {
     alert(`Submission error: ${err.message}`);
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = '⚡ Submit Analysis & Verify Fix';
+    submitBtn.textContent = 'Submit Analysis & Verify Fix';
   }
 }
 
@@ -498,13 +577,13 @@ function renderResultModal(result) {
 
   // Axis 1: Detection
   if (det.line_correct) {
-    detectionText.textContent = 'Bug Located ✓';
+    detectionText.textContent = 'Fault Located';
     badgeDetection.className = 'verdict-badge badge-success';
   } else if (det.near_miss) {
     detectionText.textContent = 'Near Miss (±1 Line)';
     badgeDetection.className = 'verdict-badge badge-warning';
   } else {
-    detectionText.textContent = 'Wrong Line ✗';
+    detectionText.textContent = 'Incorrect Line';
     badgeDetection.className = 'verdict-badge badge-danger';
   }
 
@@ -520,25 +599,25 @@ function renderResultModal(result) {
 
   // Verdict Banner
   if (result.verdict === 'found_and_understood') {
-    verdictTitle.textContent = 'Outstanding Comprehension!';
-    verdictTag.textContent = 'FOUND & UNDERSTOOD ✓';
+    verdictTitle.textContent = 'Exemplary Comprehension';
+    verdictTag.textContent = 'FOUND & UNDERSTOOD';
     verdictTag.className = 'verdict-status-label status-success';
-    verdictDesc.textContent = 'You identified the exact fault and correctly articulated the underlying flawed mental model.';
+    verdictDesc.textContent = 'You identified the exact defect location and accurately articulated the underlying flawed mental model.';
   } else if (result.verdict === 'found_not_understood') {
-    verdictTitle.textContent = 'The "Copilot Shortcut" Trap!';
-    verdictTag.textContent = 'FOUND BUT NOT UNDERSTOOD ⚠️';
+    verdictTitle.textContent = 'Superficial Patch Identified';
+    verdictTag.textContent = 'FOUND BUT NOT UNDERSTOOD';
     verdictTag.className = 'verdict-status-label status-warning';
-    verdictDesc.textContent = 'You patched the code/line without articulating the author\'s false assumption. You treated the symptom rather than understanding the cause!';
+    verdictDesc.textContent = 'You selected the faulty line without articulating the author\'s underlying misconception. This is the common "patch without understanding" pattern.';
   } else if (result.verdict === 'not_found_but_understood') {
     verdictTitle.textContent = 'Conceptual Grasp, Mislocated Line';
     verdictTag.textContent = 'UNDERSTOOD BUT NOT LOCATED';
     verdictTag.className = 'verdict-status-label status-info';
-    verdictDesc.textContent = 'You understood the conceptual issue, but pinpointed the wrong code statement.';
+    verdictDesc.textContent = 'Your mental model accurately diagnosed the failure mode, but pinpointed the wrong code statement.';
   } else {
-    verdictTitle.textContent = 'Missed Bug & Flaw';
-    verdictTag.textContent = 'NEITHER FOUND NOR UNDERSTOOD ✗';
+    verdictTitle.textContent = 'Defect Missed';
+    verdictTag.textContent = 'NOT FOUND OR UNDERSTOOD';
     verdictTag.className = 'verdict-status-label status-danger';
-    verdictDesc.textContent = 'Both the line selection and the conceptual explanation missed the defect.';
+    verdictDesc.textContent = 'Neither the line selection nor the conceptual rationale identified the defect.';
   }
 
   feedbackEl.textContent = comp.feedback || 'Evaluation completed.';
