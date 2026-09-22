@@ -3,203 +3,369 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reverse Code Arena</title>
+  <title>Reverse Code Arena — Research-Grounded Pedagogical Debugger</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="app-container">
-    <!-- Header -->
-    <header class="app-header">
-      <div class="header-left">
-        <div class="logo-icon">⚡</div>
-        <div>
-          <h1 class="app-title">Reverse Code Arena</h1>
-          <p class="app-subtitle">Research-Grounded Pedagogical Debugger &middot; Zhang (2026) & Zhao et al. (2026)</p>
+  <div class="workbench">
+    <!-- Top Navigation Toolbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="brand">
+          <span class="brand-logo">⚡</span>
+          <div class="brand-info">
+            <span class="brand-name">Reverse Code Arena</span>
+            <span class="brand-citation">Zhang (2026) &middot; Zhao et al. (2026)</span>
+          </div>
+        </div>
+        <div class="topbar-divider"></div>
+        <div class="challenge-pill-group">
+          <span class="badge badge-difficulty" id="badge-difficulty">Easy</span>
+          <span class="badge badge-bug" id="bug-type-badge">Bug: Scanning...</span>
         </div>
       </div>
-      <div class="header-right">
-        <span class="badge badge-difficulty" id="badge-difficulty">Difficulty: Easy</span>
-        <button class="btn btn-secondary" id="btn-refresh" title="Reload Challenge">
-          <span class="refresh-icon">↻</span> Reload
+
+      <div class="topbar-right">
+        <!-- Session Controls -->
+        <button class="btn btn-tool" id="btn-pause" title="Pause session to take a breath (freezes timer)">
+          <span class="btn-icon">⏸</span> Pause
         </button>
+        <button class="btn btn-tool" id="btn-refresh" title="Load another verified challenge">
+          <span class="btn-icon">↻</span> New Task
+        </button>
+        <button class="btn btn-tool" id="btn-stats" title="View Verification & Security Audit Stats">
+          <span class="btn-icon">📊</span> Stats
+        </button>
+        <div class="topbar-divider"></div>
+        <div class="status-indicator" id="server-status" title="Backend API status">
+          <span class="status-dot"></span>
+          <span class="status-text">Connected</span>
+        </div>
       </div>
     </header>
 
-    <!-- Main Content Grid -->
-    <main class="main-layout">
-      <!-- Left Column: Task Info & Code Viewer -->
-      <section class="code-column">
-        <!-- Task Description Card -->
-        <div class="card task-card">
-          <div class="card-header">
-            <div class="card-title-group">
-              <span class="card-tag">Task Specification</span>
-              <h2 class="function-title" id="function-name">find_max(...)</h2>
-            </div>
-            <span class="badge badge-bug" id="bug-type-badge">bug: off_by_one</span>
-          </div>
-          <p class="task-description" id="task-desc">
-            Loading challenge specification...
-          </p>
-
-          <div class="passing-tests-container">
-            <span class="tests-label">Passing Unit Tests (Code passes these, but fails on an edge case):</span>
-            <div class="test-pills" id="test-pills-list">
-              <span class="test-pill">Loading tests...</span>
-            </div>
+    <!-- Main Workspace (2-Column IDE Split) -->
+    <main class="workspace-main">
+      <!-- Left Pane: Problem Spec & Test Suite (38% width) -->
+      <aside class="pane pane-left">
+        <div class="pane-header">
+          <div class="pane-title">
+            <span class="icon">📋</span> Specification & Unit Tests
           </div>
         </div>
 
-        <!-- Code Viewer Card -->
-        <div class="card code-card">
-          <div class="code-card-header">
-            <div class="code-meta">
-              <span class="file-icon">🐍</span>
-              <span class="filename">solution.py</span>
-              <span class="badge badge-hint">Click a line to select bug location</span>
+        <div class="pane-content">
+          <!-- Contract Box -->
+          <div class="spec-section">
+            <div class="section-label">Function Contract</div>
+            <div class="function-signature-box">
+              <code class="function-sig" id="function-name">find_max(...)</code>
             </div>
-            <div class="selected-indicator" id="selected-indicator">
-              No line selected
-            </div>
-          </div>
-          
-          <div class="code-viewer-container" id="code-container">
-            <div class="loading-state">
-              <div class="spinner"></div>
-              <span>Fetching challenge code from API...</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Right Column: Submission Form Placeholder (Turn 4) -->
-      <aside class="submission-column">
-        <div class="card form-card">
-          <div class="card-header">
-            <div>
-              <span class="card-tag">Evaluation Portal</span>
-              <h2 class="section-title">Hypothesis & Fix</h2>
-            </div>
-            <span class="badge badge-turn">Turn 4 Placeholder</span>
+            <p class="task-description-text" id="task-desc">
+              Loading challenge specification...
+            </p>
           </div>
 
-          <p class="placeholder-notice">
-            Submit your hypothesis below. The dual-axis engine will grade both your fault localization and your conceptual understanding.
-          </p>
-
-          <div class="selected-line-banner" id="form-selected-banner">
-            <span class="banner-icon">🎯</span>
-            <div>
-              <div class="banner-label">Selected Buggy Line</div>
-              <div class="banner-value" id="form-selected-line">None selected (click a line in code)</div>
+          <!-- Unit Tests Table -->
+          <div class="spec-section">
+            <div class="section-label">Passing Unit Tests</div>
+            <p class="section-subtext">The implementation passes all test cases below, but fails on a hidden edge case:</p>
+            
+            <div class="table-wrapper">
+              <table class="test-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Input Arguments</th>
+                    <th>Expected Output</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="test-table-body">
+                  <tr>
+                    <td colspan="4" class="text-center text-muted">Loading unit tests...</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
-          <!-- Active Form Controls (Turn 4) -->
-          <form class="attempt-form" id="attempt-form" onsubmit="return false;">
-            <!-- Feature 1: Expected Behavior (Zhang Ch. 3) -->
-            <div class="form-group">
-              <label for="input-expected">
-                <span class="form-label-title">1. Expected Behavior (Zhang Ch. 3)</span>
-                <span class="form-label-desc">What should this line/section have done?</span>
-              </label>
-              <textarea id="input-expected" rows="2" placeholder="e.g., The loop should iterate over all indices up to len(numbers) - 1..."></textarea>
+          <!-- Cognitive Scaffolding Drawer (Zhang Ch. 3 & 4 G4 Concrete Tracing) -->
+          <div class="spec-section scaffolding-drawer">
+            <div class="drawer-header" id="drawer-toggle">
+              <span class="drawer-title">
+                <span class="icon">💡</span> Tracing Strategy Guide (Zhang, 2026)
+              </span>
+              <span class="drawer-chevron">▾</span>
             </div>
-
-            <!-- Feature 1: Observed Flaw -->
-            <div class="form-group">
-              <label for="input-observed">
-                <span class="form-label-title">2. Observed Flaw</span>
-                <span class="form-label-desc">What did it actually do that caused the edge case to fail?</span>
-              </label>
-              <textarea id="input-observed" rows="2" placeholder="e.g., range(len - 1) excludes the last element index..."></textarea>
+            <div class="drawer-body" id="drawer-body">
+              <p>Research shows 42.1% of novices fail by endlessly re-reading without a hypothesis. Follow the <strong>G4 Systematic Tracing Protocol</strong>:</p>
+              <ol class="scaffolding-steps">
+                <li><strong>Anchor at Entry Point:</strong> Pick the 1st passing test input and trace variable state updates line-by-line.</li>
+                <li><strong>Hypothesize Discrepancy:</strong> What did the author assume would happen vs. what the language semantics actually do?</li>
+                <li><strong>Verify Minimal Fix:</strong> Formulate your 1-line change before testing.</li>
+              </ol>
             </div>
-
-            <!-- Flawed Mental Model Explanation -->
-            <div class="form-group">
-              <label for="input-explanation">
-                <span class="form-label-title">3. Underlying Flawed Mental Model</span>
-                <span class="form-label-desc">Explain the false assumption the author made</span>
-              </label>
-              <textarea id="input-explanation" rows="2" placeholder="e.g., The author assumed range(n) is inclusive of the upper bound..."></textarea>
-            </div>
-
-            <!-- Replacement Code Line -->
-            <div class="form-group">
-              <label for="input-fix">
-                <span class="form-label-title">4. Replacement Code Line</span>
-                <span class="form-label-desc">Single-line corrected code</span>
-              </label>
-              <input type="text" id="input-fix" class="code-input" placeholder="e.g., for i in range(len(numbers)):" />
-            </div>
-
-            <!-- Submit Button -->
-            <button class="btn btn-primary btn-submit" id="btn-submit">
-              Submit & Grade Attempt
-            </button>
-          </form>
+          </div>
         </div>
       </aside>
+
+      <!-- Right Pane: Code Inspector & Diagnostic Console (62% width) -->
+      <section class="pane pane-right">
+        <!-- Upper Section: Code Inspector Editor -->
+        <div class="code-inspector-panel">
+          <div class="editor-header">
+            <div class="editor-tab active">
+              <span class="lang-icon">🐍</span>
+              <span class="tab-filename">solution.py</span>
+            </div>
+            <div class="editor-actions">
+              <span class="selection-pill" id="selected-indicator">Click a line to locate fault</span>
+            </div>
+          </div>
+
+          <div class="code-viewport" id="code-container">
+            <div class="loading-state">
+              <div class="spinner"></div>
+              <span>Preparing code inspector...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lower Section: Fault Diagnosis & Fix Console (Bottom Dock) -->
+        <div class="diagnosis-console">
+          <div class="console-header">
+            <div class="console-title">
+              <span class="icon">🎯</span> Fault Diagnosis & Fix Console
+            </div>
+            <div class="console-selected-line" id="console-selected-banner">
+              Target: <span class="highlight-line-val" id="form-selected-line">No line selected</span>
+            </div>
+          </div>
+
+          <!-- Empty State when no line selected -->
+          <div class="console-empty-prompt" id="console-empty-state">
+            <div class="empty-icon">👆</div>
+            <div class="empty-title">Select a line from the code above</div>
+            <div class="empty-subtitle">Click the line number or code statement where you believe the author made a flawed assumption.</div>
+          </div>
+
+          <!-- Active Form when line is selected -->
+          <form class="console-form" id="attempt-form" style="display: none;" onsubmit="return false;">
+            <div class="console-grid">
+              <!-- Left Sub-column: Hypothesis-First Scaffolding (Zhang Ch. 3) -->
+              <div class="console-col">
+                <div class="field-group">
+                  <label for="input-expected">
+                    <span class="field-title">1. Expected Behavior</span>
+                    <span class="field-desc">What was this line supposed to do?</span>
+                  </label>
+                  <input type="text" id="input-expected" class="text-input" placeholder="e.g. Iterate over all list elements including the last one" />
+                </div>
+
+                <div class="field-group">
+                  <label for="input-observed">
+                    <span class="field-title">2. Observed Flaw</span>
+                    <span class="field-desc">What actually occurs on the edge case?</span>
+                  </label>
+                  <input type="text" id="input-observed" class="text-input" placeholder="e.g. range(len - 1) terminates 1 step too early" />
+                </div>
+              </div>
+
+              <!-- Right Sub-column: Mental Model & Fix -->
+              <div class="console-col">
+                <div class="field-group">
+                  <label for="input-explanation">
+                    <span class="field-title">3. Author's Flawed Assumption</span>
+                    <span class="field-desc">The underlying misconception being tested</span>
+                  </label>
+                  <input type="text" id="input-explanation" class="text-input" placeholder="e.g. Assumed range(n) is inclusive of the upper boundary" />
+                </div>
+
+                <div class="field-group">
+                  <label for="input-fix">
+                    <span class="field-title">4. Replacement Line (1-Line Fix)</span>
+                    <span class="field-desc">Clean single-line correction</span>
+                  </label>
+                  <input type="text" id="input-fix" class="code-input" placeholder="e.g. for i in range(len(numbers)):" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Console Action Bar -->
+            <div class="console-actions">
+              <div class="shortcut-hint">
+                Tip: Press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to submit
+              </div>
+              <div class="actions-group">
+                <button type="button" class="btn btn-secondary" id="btn-reset-form">Reset</button>
+                <button type="button" class="btn btn-primary btn-cta" id="btn-submit">
+                  ⚡ Submit Analysis & Verify Fix
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </section>
     </main>
 
-    <!-- Feature 2: Anti-Stagnation Scaffold Alert (Zhang Ch. 3 & 4) -->
-    <div class="stagnation-toast" id="stagnation-toast" style="display: none;">
-      <div class="stagnation-header">
-        <span class="stagnation-icon">💡</span>
-        <strong>Cognitive Scaffolding Nudge (Zhang, 2026)</strong>
-        <button class="toast-close" id="toast-close">&times;</button>
+    <!-- Bottom Status Footer -->
+    <footer class="workbench-footer">
+      <div class="footer-left">
+        <span>Reverse Code Arena &middot; Grounded in <em>Zhang (WSU, 2026)</em> & <em>Zhao et al. (EPFL/UTokyo, 2026)</em></span>
       </div>
-      <p id="stagnation-msg">
-        You have been reviewing for a while. Try tracing the input from the entry point with one of the passing test inputs rather than scanning the entire file repeatedly.
-      </p>
-    </div>
-
-    <!-- Dual-Axis Results Modal -->
-    <div class="modal-backdrop" id="result-modal" style="display: none;">
-      <div class="modal-card">
-        <div class="modal-header">
-          <span class="card-tag">Evaluation Complete</span>
-          <h2 class="modal-title" id="verdict-title">Result Verdict</h2>
-        </div>
-
-        <!-- Dual-Axis Badges -->
-        <div class="verdict-badges-row">
-          <div class="verdict-badge" id="badge-detection">
-            <span class="badge-subtitle">Axis 1: Detection</span>
-            <span class="badge-main-text" id="detection-text">Line Check</span>
-          </div>
-          <div class="verdict-badge" id="badge-comprehension">
-            <span class="badge-subtitle">Axis 2: Comprehension</span>
-            <span class="badge-main-text" id="comprehension-text">Score 0/3</span>
-          </div>
-        </div>
-
-        <div class="verdict-banner" id="verdict-banner">
-          <div class="verdict-status-label" id="verdict-tag">Found & Understood</div>
-          <p class="verdict-explanation" id="verdict-desc">Evaluation summary</p>
-        </div>
-
-        <!-- Feedback Card -->
-        <div class="feedback-card">
-          <div class="feedback-label">Pedagogical Feedback (Zhao et al. Anti-Leakage CoT):</div>
-          <p class="feedback-body" id="modal-feedback">Feedback text...</p>
-        </div>
-
-        <div class="modal-actions">
-          <button class="btn btn-primary" id="btn-next-challenge">Next Challenge ➔</button>
-          <button class="btn btn-secondary" id="btn-close-modal">Review Code</button>
-        </div>
+      <div class="footer-right">
+        <span class="footer-tag">Sandboxed Subprocess Execution (5s Timeout)</span>
+        <span class="footer-tag">Zero-Leakage Pedagogical CoT</span>
       </div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="app-footer">
-      <span>Reverse Code Arena &middot; Grounded in Zhang (WSU, 2026) & Zhao, Knežević, & Käser (EPFL/UTokyo, 2026)</span>
-      <span class="footer-status" id="server-status">API: Connected (http://localhost:8000)</span>
     </footer>
+  </div>
+
+  <!-- ========================================================================
+       MODALS & OVERLAYS
+       ======================================================================== -->
+
+  <!-- 1. Context-First Welcome Briefing Overlay -->
+  <div class="modal-backdrop" id="briefing-modal">
+    <div class="modal-card briefing-card">
+      <div class="modal-header">
+        <div class="briefing-badge">Briefing &middot; Reverse Code Arena</div>
+        <h2 class="modal-title">Code Comprehension & Bug Audit</h2>
+      </div>
+
+      <div class="briefing-body">
+        <p class="briefing-intro">
+          Most coders are trained to write blank-slate code, but real engineering requires <strong>auditing code written by others or LLMs</strong>.
+        </p>
+
+        <div class="briefing-grid">
+          <div class="briefing-step-card">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <h4>The Hidden Flaw</h4>
+              <p>The code compiles and passes typical unit tests, but embodies a subtle <strong>flawed mental model</strong> that fails an edge case.</p>
+            </div>
+          </div>
+
+          <div class="briefing-step-card">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <h4>Hypothesis-First Audit</h4>
+              <p>Pinpoint the faulty line, articulate the author's false assumption (why they made it), and propose a 1-line surgical fix.</p>
+            </div>
+          </div>
+
+          <div class="briefing-step-card">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <h4>Dual-Axis Evaluation</h4>
+              <p>You are scored separately on <strong>Fault Detection</strong> and <strong>Conceptual Comprehension</strong> to expose "patching without understanding."</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions briefing-actions">
+        <button class="btn btn-primary btn-start" id="btn-start-review">
+          🚀 Start Code Review
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Session Paused Overlay -->
+  <div class="modal-backdrop" id="pause-overlay" style="display: none;">
+    <div class="modal-card pause-card">
+      <div class="pause-icon">☕</div>
+      <h2 class="modal-title">Review Paused</h2>
+      <p class="pause-text">Take a breath. The cognitive timers and task tracking are suspended while you rest.</p>
+      <button class="btn btn-primary btn-cta" id="btn-resume-review">
+        ▶ Resume Review
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Dual-Axis Results Modal -->
+  <div class="modal-backdrop" id="result-modal" style="display: none;">
+    <div class="modal-card result-card">
+      <div class="modal-header">
+        <span class="card-tag" id="modal-eval-tag">Evaluation Complete</span>
+        <h2 class="modal-title" id="verdict-title">Evaluation Verdict</h2>
+      </div>
+
+      <!-- Dual-Axis Badges -->
+      <div class="verdict-badges-row">
+        <div class="verdict-badge" id="badge-detection">
+          <span class="badge-subtitle">Axis 1: Detection</span>
+          <span class="badge-main-text" id="detection-text">Line Check</span>
+        </div>
+        <div class="verdict-badge" id="badge-comprehension">
+          <span class="badge-subtitle">Axis 2: Comprehension</span>
+          <span class="badge-main-text" id="comprehension-text">Score 0/3</span>
+        </div>
+      </div>
+
+      <!-- Verdict Callout Banner -->
+      <div class="verdict-banner" id="verdict-banner">
+        <div class="verdict-status-label" id="verdict-tag">Found & Understood</div>
+        <p class="verdict-explanation" id="verdict-desc">Evaluation summary description</p>
+      </div>
+
+      <!-- Pedagogical CoT Feedback (Zhao et al.) -->
+      <div class="feedback-card">
+        <div class="feedback-label">Pedagogical Evaluation (Zero-Leakage Guarded):</div>
+        <p class="feedback-body" id="modal-feedback">Feedback message...</p>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="btn-close-modal">Inspect Code</button>
+        <button class="btn btn-primary btn-cta" id="btn-next-challenge">Next Challenge ➔</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Platform Stats Modal -->
+  <div class="modal-backdrop" id="stats-modal" style="display: none;">
+    <div class="modal-card stats-card">
+      <div class="modal-header">
+        <span class="card-tag">Telemetry & Verification Audit</span>
+        <h2 class="modal-title">Platform Performance & Security</h2>
+      </div>
+
+      <div class="stats-grid" id="stats-content">
+        <div class="stat-box">
+          <span class="stat-number" id="stat-pass-rate">100%</span>
+          <span class="stat-label">Harness Verification Pass Rate</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-number" id="stat-leak-rate">0.0%</span>
+          <span class="stat-label">Adversarial Leakage Rate (Zhao et al.)</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-number" id="stat-total-attempts">0</span>
+          <span class="stat-label">Total Student Attempts Logged</span>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="btn-close-stats">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Feature 2: Anti-Stagnation Scaffold Nudge (Zhang Ch. 3 & 4) -->
+  <div class="stagnation-toast" id="stagnation-toast" style="display: none;">
+    <div class="stagnation-header">
+      <span class="stagnation-icon">💡</span>
+      <strong>Cognitive Scaffolding Nudge (Zhang, 2026)</strong>
+      <button class="toast-close" id="toast-close">&times;</button>
+    </div>
+    <p id="stagnation-msg">
+      You have been reading for a while. Rather than scanning the whole file repeatedly, trace the first unit test input line-by-line from the entry point!
+    </p>
   </div>
 
   <script src="app.js"></script>

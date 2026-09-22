@@ -1,5 +1,5 @@
 // ==========================================================================
-// Reverse Code Arena — Frontend Controller (Vanilla JS)
+// Reverse Code Arena — Professional Workbench Controller (Vanilla JS)
 // Grounded in Zhang (WSU, 2026) and Zhao et al. (EPFL/UTokyo, 2026)
 // ==========================================================================
 
@@ -8,17 +8,38 @@ let selected_line = null;
 let lineClickCount = 0;
 let stagnationTimer = null;
 let challengeStartTime = null;
+let totalPausedDuration = 0;
+let pauseStartTime = null;
+let isSessionActive = false;
+let isPaused = false;
 
-// Determine API Base URL (works both when served via FastAPI and file://)
+// Determine API Base URL
 const API_BASE = window.location.origin.includes('localhost:8000') || window.location.origin.includes('127.0.0.1:8000')
   ? ''
   : 'http://localhost:8000';
 
 document.addEventListener('DOMContentLoaded', () => {
-  initApp();
+  initWorkbench();
 });
 
-function initApp() {
+function initWorkbench() {
+  // 1. Context Briefing Start Button
+  const startBtn = document.getElementById('btn-start-review');
+  if (startBtn) {
+    startBtn.addEventListener('click', startReviewSession);
+  }
+
+  // 2. Pause / Resume Controls
+  const pauseBtn = document.getElementById('btn-pause');
+  if (pauseBtn) {
+    pauseBtn.addEventListener('click', togglePauseSession);
+  }
+  const resumeBtn = document.getElementById('btn-resume-review');
+  if (resumeBtn) {
+    resumeBtn.addEventListener('click', resumeSession);
+  }
+
+  // 3. New Task Reload Button
   const refreshBtn = document.getElementById('btn-refresh');
   if (refreshBtn) {
     refreshBtn.addEventListener('click', () => {
@@ -26,13 +47,27 @@ function initApp() {
     });
   }
 
-  // Submit button
+  // 4. Platform Stats Modal
+  const statsBtn = document.getElementById('btn-stats');
+  if (statsBtn) {
+    statsBtn.addEventListener('click', openStatsModal);
+  }
+  const closeStatsBtn = document.getElementById('btn-close-stats');
+  if (closeStatsBtn) {
+    closeStatsBtn.addEventListener('click', closeStatsModal);
+  }
+
+  // 5. Submit & Reset Actions
   const submitBtn = document.getElementById('btn-submit');
   if (submitBtn) {
     submitBtn.addEventListener('click', handleAttemptSubmit);
   }
+  const resetBtn = document.getElementById('btn-reset-form');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', resetForm);
+  }
 
-  // Modal actions
+  // 6. Result Modal Actions
   const nextBtn = document.getElementById('btn-next-challenge');
   if (nextBtn) {
     nextBtn.addEventListener('click', () => {
@@ -40,13 +75,28 @@ function initApp() {
       fetchChallenge();
     });
   }
-
   const closeModalBtn = document.getElementById('btn-close-modal');
   if (closeModalBtn) {
     closeModalBtn.addEventListener('click', closeResultModal);
   }
 
-  // Toast close
+  // 7. Scaffolding Drawer Accordion Toggle
+  const drawerToggle = document.getElementById('drawer-toggle');
+  if (drawerToggle) {
+    drawerToggle.addEventListener('click', () => {
+      const body = document.getElementById('drawer-body');
+      const chevron = drawerToggle.querySelector('.drawer-chevron');
+      if (body.style.display === 'none') {
+        body.style.display = 'block';
+        chevron.textContent = '▾';
+      } else {
+        body.style.display = 'none';
+        chevron.textContent = '▸';
+      }
+    });
+  }
+
+  // 8. Stagnation Toast Close
   const toastClose = document.getElementById('toast-close');
   if (toastClose) {
     toastClose.addEventListener('click', () => {
@@ -54,38 +104,92 @@ function initApp() {
     });
   }
 
-  fetchChallenge();
+  // 9. Keyboard Shortcuts (Ctrl+Enter / Cmd+Enter to submit, Esc to close modals)
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      if (isSessionActive && !isPaused && selected_line) {
+        e.preventDefault();
+        handleAttemptSubmit();
+      }
+    } else if (e.key === 'Escape') {
+      closeResultModal();
+      closeStatsModal();
+    }
+  });
+
+  // Preload initial challenge data in background
+  fetchChallenge(false);
+}
+
+/**
+ * Start session upon user click on the Welcome Briefing modal
+ */
+function startReviewSession() {
+  const briefingModal = document.getElementById('briefing-modal');
+  if (briefingModal) briefingModal.style.display = 'none';
+
+  isSessionActive = true;
+  isPaused = false;
+  challengeStartTime = Date.now();
+  totalPausedDuration = 0;
+
+  // Start the 90s stagnation check timer (Zhang Ch. 3 & 4)
+  if (stagnationTimer) clearInterval(stagnationTimer);
+  stagnationTimer = setInterval(checkStagnation, 5000);
+}
+
+/**
+ * Toggle session pause
+ */
+function togglePauseSession() {
+  if (!isSessionActive) return;
+  if (!isPaused) {
+    isPaused = true;
+    pauseStartTime = Date.now();
+    document.getElementById('pause-overlay').style.display = 'flex';
+  }
+}
+
+function resumeSession() {
+  if (isPaused) {
+    isPaused = false;
+    if (pauseStartTime) {
+      totalPausedDuration += (Date.now() - pauseStartTime);
+      pauseStartTime = null;
+    }
+    document.getElementById('pause-overlay').style.display = 'none';
+  }
 }
 
 /**
  * Fetch challenge from GET /api/challenge
  */
-async function fetchChallenge() {
+async function fetchChallenge(startTimer = true) {
   const codeContainer = document.getElementById('code-container');
   const taskDescEl = document.getElementById('task-desc');
-  const testPillsList = document.getElementById('test-pills-list');
   const funcNameEl = document.getElementById('function-name');
   const bugBadgeEl = document.getElementById('bug-type-badge');
+  const testTableBody = document.getElementById('test-table-body');
   const serverStatus = document.getElementById('server-status');
 
   // Reset state
   selected_line = null;
   lineClickCount = 0;
-  challengeStartTime = Date.now();
   updateSelectedLineUI(null);
-  clearFormInputs();
+  resetForm();
   hideStagnationNudge();
   closeResultModal();
 
-  // Reset stagnation timer (90 seconds - Zhang Ch. 3 & 4)
-  if (stagnationTimer) clearInterval(stagnationTimer);
-  stagnationTimer = setInterval(checkStagnation, 5000);
+  if (startTimer && isSessionActive) {
+    challengeStartTime = Date.now();
+    totalPausedDuration = 0;
+  }
 
-  // Show loading indicator
+  // Show loading state in editor
   codeContainer.innerHTML = `
     <div class="loading-state">
       <div class="spinner"></div>
-      <span>Fetching challenge from API...</span>
+      <span>Loading challenge specification and code...</span>
     </div>
   `;
 
@@ -100,18 +204,18 @@ async function fetchChallenge() {
 
     // Render metadata
     funcNameEl.textContent = `${challenge.function_name}(...)`;
-    bugBadgeEl.textContent = `bug: ${challenge.bug_type}`;
+    bugBadgeEl.textContent = `Bug: ${challenge.bug_type}`;
     taskDescEl.textContent = challenge.task_description;
 
-    // Render passing tests
-    renderPassingTests(challenge.passing_tests);
+    // Render unit test table
+    renderUnitTestTable(challenge.passing_tests, testTableBody);
 
-    // Render code with clickable line numbers
+    // Render code in inspector
     renderCode(challenge.code);
 
     if (serverStatus) {
-      serverStatus.textContent = 'API: Connected (http://localhost:8000)';
-      serverStatus.style.color = 'var(--accent-emerald)';
+      serverStatus.querySelector('.status-dot').style.backgroundColor = 'var(--accent-emerald)';
+      serverStatus.querySelector('.status-text').textContent = 'API: Connected';
     }
   } catch (error) {
     console.error('Error fetching challenge:', error);
@@ -119,40 +223,46 @@ async function fetchChallenge() {
       <div class="loading-state">
         <span style="color: var(--accent-rose); font-weight: 600;">Failed to load challenge</span>
         <span style="font-size: 0.8rem; color: var(--text-muted);">${error.message}</span>
-        <button class="btn btn-secondary" onclick="fetchChallenge()" style="margin-top: 0.5rem;">
+        <button class="btn btn-secondary" onclick="fetchChallenge(true)" style="margin-top: 0.5rem;">
           Try Again
         </button>
       </div>
     `;
 
     if (serverStatus) {
-      serverStatus.textContent = 'API: Disconnected / Error';
-      serverStatus.style.color = 'var(--accent-rose)';
+      serverStatus.querySelector('.status-dot').style.backgroundColor = 'var(--accent-rose)';
+      serverStatus.querySelector('.status-text').textContent = 'API: Disconnected';
     }
   }
 }
 
 /**
- * Render passing test cases as pills
+ * Render passing unit tests into clean table
  */
-function renderPassingTests(passingTests) {
-  const testPillsList = document.getElementById('test-pills-list');
+function renderUnitTestTable(passingTests, tbody) {
   if (!passingTests || passingTests.length === 0) {
-    testPillsList.innerHTML = `<span class="test-pill">No test cases available</span>`;
+    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">No test cases available</td></tr>`;
     return;
   }
 
-  testPillsList.innerHTML = passingTests.map((t, idx) => {
+  tbody.innerHTML = passingTests.map((t, idx) => {
     const inputFormatted = Array.isArray(t.input) && t.input.length === 1
       ? JSON.stringify(t.input[0])
       : JSON.stringify(t.input);
     const expectedFormatted = JSON.stringify(t.expected);
-    return `<span class="test-pill">Test ${idx + 1}: input=${inputFormatted} ➔ ${expectedFormatted}</span>`;
+    return `
+      <tr>
+        <td style="color: var(--text-dim);">${idx + 1}</td>
+        <td><code>${escapeHtml(inputFormatted)}</code></td>
+        <td><code>${escapeHtml(expectedFormatted)}</code></td>
+        <td><span class="test-pass-tag">PASS &#10003;</span></td>
+      </tr>
+    `;
   }).join('');
 }
 
 /**
- * Render code lines in an interactive table
+ * Render code lines into inspector table with clickable gutters
  */
 function renderCode(codeString) {
   const codeContainer = document.getElementById('code-container');
@@ -164,7 +274,6 @@ function renderCode(codeString) {
   const lines = codeString.split('\n');
   const table = document.createElement('table');
   table.className = 'code-table';
-
   const tbody = document.createElement('tbody');
 
   lines.forEach((lineText, index) => {
@@ -173,12 +282,12 @@ function renderCode(codeString) {
     row.className = 'code-row';
     row.dataset.line = lineNum;
 
-    // Line number column (gutter)
+    // Line number gutter
     const lineNumCell = document.createElement('td');
     lineNumCell.className = 'code-line-num';
     lineNumCell.textContent = lineNum;
 
-    // Code content column
+    // Code text
     const codeContentCell = document.createElement('td');
     codeContentCell.className = 'code-line-content';
     codeContentCell.textContent = lineText;
@@ -186,7 +295,6 @@ function renderCode(codeString) {
     row.appendChild(lineNumCell);
     row.appendChild(codeContentCell);
 
-    // Click handler to select line
     row.addEventListener('click', () => {
       selectLine(lineNum, lineText, row);
     });
@@ -203,27 +311,29 @@ function renderCode(codeString) {
  * Handle line selection
  */
 function selectLine(lineNum, lineText, rowElement) {
-  // Clear previous selection
   document.querySelectorAll('.code-row.selected').forEach(el => {
     el.classList.remove('selected');
   });
 
-  // Highlight newly selected line
   rowElement.classList.add('selected');
   selected_line = lineNum;
   lineClickCount++;
 
-  // Auto-prefill replacement line with the selected code
+  // Auto-prefill replacement line input with selected code
   const fixInput = document.getElementById('input-fix');
   if (fixInput && (!fixInput.value || fixInput.dataset.autoPrefilled === 'true')) {
     fixInput.value = lineText;
     fixInput.dataset.autoPrefilled = 'true';
   }
 
-  // Update UI indicators
+  // Update UI indicators & switch console from empty state to active form
   updateSelectedLineUI(lineNum);
 
-  // Check if multiple erratic clicks suggest struggle
+  // Focus the first hypothesis input
+  const expInput = document.getElementById('input-expected');
+  if (expInput) expInput.focus();
+
+  // Trigger stagnation warning if user clicks >= 4 lines erratically
   if (lineClickCount >= 4) {
     showStagnationNudge();
   }
@@ -235,23 +345,33 @@ function selectLine(lineNum, lineText, rowElement) {
 function updateSelectedLineUI(lineNum) {
   const indicator = document.getElementById('selected-indicator');
   const formSelectedLine = document.getElementById('form-selected-line');
+  const emptyState = document.getElementById('console-empty-state');
+  const activeForm = document.getElementById('attempt-form');
 
   if (lineNum !== null && lineNum !== undefined) {
     indicator.textContent = `Selected: Line ${lineNum}`;
     indicator.style.color = 'var(--accent-cyan)';
     indicator.style.borderColor = 'var(--accent-cyan)';
+
     formSelectedLine.textContent = `Line ${lineNum}`;
     formSelectedLine.style.color = 'var(--accent-cyan)';
+
+    if (emptyState) emptyState.style.display = 'none';
+    if (activeForm) activeForm.style.display = 'flex';
   } else {
-    indicator.textContent = 'No line selected';
-    indicator.style.color = 'var(--text-dim)';
-    indicator.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-    formSelectedLine.textContent = 'None selected (click a line in code)';
+    indicator.textContent = 'Click a line to locate fault';
+    indicator.style.color = 'var(--accent-cyan)';
+    indicator.style.borderColor = 'rgba(56, 189, 248, 0.2)';
+
+    formSelectedLine.textContent = 'No line selected';
     formSelectedLine.style.color = 'var(--text-dim)';
+
+    if (emptyState) emptyState.style.display = 'flex';
+    if (activeForm) activeForm.style.display = 'none';
   }
 }
 
-function clearFormInputs() {
+function resetForm() {
   const exp = document.getElementById('input-expected');
   const obs = document.getElementById('input-observed');
   const expl = document.getElementById('input-explanation');
@@ -270,8 +390,8 @@ function clearFormInputs() {
  * Feature 2: Anti-Stagnation Scaffold (Zhang Ch. 3 & 4)
  */
 function checkStagnation() {
-  if (!challengeStartTime || !currentChallenge) return;
-  const elapsedSeconds = (Date.now() - challengeStartTime) / 1000;
+  if (!isSessionActive || isPaused || !challengeStartTime || !currentChallenge) return;
+  const elapsedSeconds = (Date.now() - challengeStartTime - totalPausedDuration) / 1000;
   if (elapsedSeconds >= 90) {
     showStagnationNudge();
   }
@@ -288,7 +408,7 @@ function showStagnationNudge() {
 
   msg.innerHTML = `
     <strong>Stuck in a reading loop? (Zhang, 2026):</strong> Rather than scanning the whole file repeatedly, 
-    start at the function entry point with input <code>${firstTest}</code>. Trace intermediate variable states line-by-line to form a concrete hypothesis!
+    start at the function entry point with input <code>${escapeHtml(firstTest)}</code>. Trace intermediate variable states line-by-line to form a concrete hypothesis!
   `;
   toast.style.display = 'block';
 }
@@ -314,11 +434,11 @@ async function handleAttemptSubmit() {
   const submitBtn = document.getElementById('btn-submit');
 
   if (!explInput && !expInput && !obsInput) {
-    alert('Please provide your explanation or expected/observed behavior.');
+    alert('Please enter your hypothesis or explanation before submitting.');
     return;
   }
 
-  // Construct full fixed code by substituting the single line
+  // Construct full fixed code by replacing the selected line
   const lines = (currentChallenge.code || '').split('\n');
   if (selected_line >= 1 && selected_line <= lines.length && fixInput) {
     lines[selected_line - 1] = fixInput;
@@ -355,7 +475,7 @@ async function handleAttemptSubmit() {
     alert(`Submission error: ${err.message}`);
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = 'Submit & Grade Attempt';
+    submitBtn.textContent = '⚡ Submit Analysis & Verify Fix';
   }
 }
 
@@ -398,7 +518,7 @@ function renderResultModal(result) {
     badgeComprehension.className = 'verdict-badge badge-danger';
   }
 
-  // Verdict Banner (Separating fixing from understanding!)
+  // Verdict Banner
   if (result.verdict === 'found_and_understood') {
     verdictTitle.textContent = 'Outstanding Comprehension!';
     verdictTag.textContent = 'FOUND & UNDERSTOOD ✓';
@@ -408,9 +528,9 @@ function renderResultModal(result) {
     verdictTitle.textContent = 'The "Copilot Shortcut" Trap!';
     verdictTag.textContent = 'FOUND BUT NOT UNDERSTOOD ⚠️';
     verdictTag.className = 'verdict-status-label status-warning';
-    verdictDesc.textContent = 'You fixed the line or test, but your explanation missed the flawed assumption. You patched without true understanding!';
+    verdictDesc.textContent = 'You patched the code/line without articulating the author\'s false assumption. You treated the symptom rather than understanding the cause!';
   } else if (result.verdict === 'not_found_but_understood') {
-    verdictTitle.textContent = 'Good Concept, Wrong Line';
+    verdictTitle.textContent = 'Conceptual Grasp, Mislocated Line';
     verdictTag.textContent = 'UNDERSTOOD BUT NOT LOCATED';
     verdictTag.className = 'verdict-status-label status-info';
     verdictDesc.textContent = 'You understood the conceptual issue, but pinpointed the wrong code statement.';
@@ -428,4 +548,44 @@ function renderResultModal(result) {
 function closeResultModal() {
   const modal = document.getElementById('result-modal');
   if (modal) modal.style.display = 'none';
+}
+
+/**
+ * Platform Stats Modal Handler
+ */
+async function openStatsModal() {
+  const modal = document.getElementById('stats-modal');
+  if (!modal) return;
+
+  modal.style.display = 'flex';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/stats`);
+    if (res.ok) {
+      const data = await res.json();
+      const passRate = data.generation_verification?.verification_pass_rate || '100%';
+      const leakRate = data.adversarial_robustness_benchmark?.arena_leakage_rate || '0.0%';
+      const totalAttempts = data.attempts_summary?.total || 0;
+
+      document.getElementById('stat-pass-rate').textContent = passRate;
+      document.getElementById('stat-leak-rate').textContent = leakRate;
+      document.getElementById('stat-total-attempts').textContent = totalAttempts;
+    }
+  } catch (err) {
+    console.error('Failed to load stats:', err);
+  }
+}
+
+function closeStatsModal() {
+  const modal = document.getElementById('stats-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function escapeHtml(str) {
+  if (typeof str !== 'string') return str;
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
