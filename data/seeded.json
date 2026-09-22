@@ -183,5 +183,251 @@
       "expected": 66.67
     },
     "correct_line": "    percentage = (passed_count * 100) / total_items"
+  },
+  {
+    "id": "ch_boundary_inclusive_adm18",
+    "task_description": "Determines whether an applicant is eligible for admission based on their age meeting or exceeding the minimum cutoff age (e.g., 18). Non-integer inputs return False.",
+    "function_name": "check_admission_eligibility",
+    "code": "def check_admission_eligibility(applicant_age, min_age=18):\n    if not isinstance(applicant_age, int):\n        return False\n    if applicant_age < 0:\n        return False\n    if applicant_age > min_age:\n        return True\n    return False",
+    "num_lines": 8,
+    "bug_type": "boundary_inclusive",
+    "buggy_line_number": 6,
+    "flawed_assumption": "A boundary threshold is strictly greater/less when it should include the boundary value (or vice versa)",
+    "passing_tests": [
+      {
+        "input": [
+          25,
+          18
+        ],
+        "expected": true
+      },
+      {
+        "input": [
+          15,
+          18
+        ],
+        "expected": false
+      },
+      {
+        "input": [
+          -5,
+          18
+        ],
+        "expected": false
+      }
+    ],
+    "edge_case_test": {
+      "input": [
+        18,
+        18
+      ],
+      "expected": true
+    },
+    "correct_line": "    if applicant_age >= min_age:"
+  },
+  {
+    "id": "ch_off_by_one_target_idx",
+    "task_description": "Searches a list of items for the first occurrence of a target value and returns its index. Returns -1 if the target is not present.",
+    "function_name": "find_target_index",
+    "code": "def find_target_index(items, target):\n    if not isinstance(items, list):\n        raise TypeError(\"Items must be a list\")\n    n = len(items)\n    if n == 0:\n        return -1\n    for idx in range(n - 1):\n        if items[idx] == target:\n            return idx\n    return -1",
+    "num_lines": 11,
+    "bug_type": "off_by_one",
+    "buggy_line_number": 7,
+    "flawed_assumption": "range() covers the last element or boundary element",
+    "passing_tests": [
+      {
+        "input": [
+          [
+            10,
+            20,
+            30,
+            40
+          ],
+          20
+        ],
+        "expected": 1
+      },
+      {
+        "input": [
+          [
+            10,
+            20,
+            30,
+            40
+          ],
+          10
+        ],
+        "expected": 0
+      },
+      {
+        "input": [
+          [
+            10,
+            20,
+            30,
+            40
+          ],
+          99
+        ],
+        "expected": -1
+      }
+    ],
+    "edge_case_test": {
+      "input": [
+        [
+          10,
+          20,
+          30,
+          40
+        ],
+        40
+      ],
+      "expected": 3
+    },
+    "correct_line": "    for idx in range(n):"
+  },
+  {
+    "id": "ch_int_division_avg_rating",
+    "task_description": "Calculates the average rating from a list of integer ratings (1 to 5), returning the float average rounded to 2 decimal places. Returns 0.0 for an empty list.",
+    "function_name": "calculate_average_rating",
+    "code": "def calculate_average_rating(ratings):\n    if not isinstance(ratings, list):\n        return 0.0\n    count = len(ratings)\n    if count == 0:\n        return 0.0\n    total_score = sum(ratings)\n    average = total_score // count\n    return round(float(average), 2)",
+    "num_lines": 9,
+    "bug_type": "int_division",
+    "buggy_line_number": 8,
+    "flawed_assumption": "Integer division (//) preserves precision or truncation before rounding yields expected results",
+    "passing_tests": [
+      {
+        "input": [
+          [
+            4,
+            4,
+            4,
+            4
+          ]
+        ],
+        "expected": 4.0
+      },
+      {
+        "input": [
+          [
+            5,
+            5,
+            5
+          ]
+        ],
+        "expected": 5.0
+      },
+      {
+        "input": [
+          []
+        ],
+        "expected": 0.0
+      }
+    ],
+    "edge_case_test": {
+      "input": [
+        [
+          4,
+          5
+        ]
+      ],
+      "expected": 4.5
+    },
+    "correct_line": "    average = total_score / count"
+  },
+  {
+    "id": "ch_boundary_inclusive_gpa",
+    "task_description": "Determines if a student GPA qualifies for honor roll (GPA >= 3.5). Invalid GPAs outside [0.0, 4.0] return False.",
+    "function_name": "is_honor_roll",
+    "code": "def is_honor_roll(gpa):\n    if not isinstance(gpa, (int, float)):\n        return False\n    if gpa < 0.0 or gpa > 4.0:\n        return False\n    if gpa > 3.5:\n        return True\n    return False",
+    "num_lines": 8,
+    "bug_type": "boundary_inclusive",
+    "buggy_line_number": 6,
+    "flawed_assumption": "A boundary threshold is strictly greater/less when it should include the boundary value (or vice versa)",
+    "passing_tests": [
+      {
+        "input": [
+          3.8
+        ],
+        "expected": true
+      },
+      {
+        "input": [
+          2.9
+        ],
+        "expected": false
+      },
+      {
+        "input": [
+          4.5
+        ],
+        "expected": false
+      }
+    ],
+    "edge_case_test": {
+      "input": [
+        3.5
+      ],
+      "expected": true
+    },
+    "correct_line": "    if gpa >= 3.5:"
+  },
+  {
+    "id": "ch_off_by_one_adjacent_dups",
+    "task_description": "Counts the number of adjacent duplicate element pairs in a list. Returns 0 if the list has fewer than 2 elements.",
+    "function_name": "count_adjacent_duplicates",
+    "code": "def count_adjacent_duplicates(items):\n    if not isinstance(items, list):\n        raise TypeError(\"Input must be a list\")\n    n = len(items)\n    if n < 2:\n        return 0\n    duplicate_count = 0\n    for i in range(n - 2):\n        if items[i] == items[i + 1]:\n            duplicate_count += 1\n    return duplicate_count",
+    "num_lines": 12,
+    "bug_type": "off_by_one",
+    "buggy_line_number": 8,
+    "flawed_assumption": "range() covers the last element or boundary element",
+    "passing_tests": [
+      {
+        "input": [
+          [
+            1,
+            1,
+            2,
+            3
+          ]
+        ],
+        "expected": 1
+      },
+      {
+        "input": [
+          [
+            5,
+            5,
+            5,
+            2,
+            1
+          ]
+        ],
+        "expected": 2
+      },
+      {
+        "input": [
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ],
+        "expected": 0
+      }
+    ],
+    "edge_case_test": {
+      "input": [
+        [
+          1,
+          2,
+          3,
+          3
+        ]
+      ],
+      "expected": 1
+    },
+    "correct_line": "    for i in range(n - 1):"
   }
 ]
