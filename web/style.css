@@ -107,13 +107,20 @@ html, body {
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-/* In Dark Mode, the pattern is NOT visible at all (pure solid black background) */
+/* Visible Indian Geometric Folding Lattice Overlay in Dark Mode */
 body::before {
   content: '';
-  display: none;
+  display: block;
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cpath d='M0 32 L32 0 L64 32 L32 64 Z' fill='none' stroke='%23ffffff' stroke-opacity='0.20' stroke-width='1.2'/%3E%3Cpath d='M16 32 L32 16 L48 32 L32 48 Z' fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='1'/%3E%3Cpath d='M0 0 L64 64 M64 0 L0 64' fill='none' stroke='%23ffffff' stroke-opacity='0.14' stroke-width='0.9' stroke-dasharray='4,3'/%3E%3Cpath d='M32 0 L32 64 M0 32 L64 32' fill='none' stroke='%23ffffff' stroke-opacity='0.14' stroke-width='0.9'/%3E%3Cpath d='M0 16 L16 0 M48 0 L64 16 M64 48 L48 64 M16 64 L0 48' fill='none' stroke='%23ffffff' stroke-opacity='0.16' stroke-width='1'/%3E%3Ccircle cx='32' cy='32' r='2.5' fill='%23ffffff' fill-opacity='0.25'/%3E%3C/svg%3E");
+  background-size: 64px 64px;
 }
 
-/* In Light Mode, subtle geometric lattice */
+/* In Light Mode, warm terra-cotta geometric lattice */
 body.theme-light::before {
   content: '';
   display: block;
@@ -121,8 +128,8 @@ body.theme-light::before {
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.85;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cpath d='M0 32 L32 0 L64 32 L32 64 Z' fill='none' stroke='%238c6b43' stroke-opacity='0.12' stroke-width='1'/%3E%3Cpath d='M0 0 L64 64 M64 0 L0 64' fill='none' stroke='%238c6b43' stroke-opacity='0.08' stroke-width='0.75' stroke-dasharray='3,3'/%3E%3Cpath d='M32 0 L32 64 M0 32 L64 32' fill='none' stroke='%238c6b43' stroke-opacity='0.08' stroke-width='0.75'/%3E%3Ccircle cx='32' cy='32' r='2' fill='%238c6b43' fill-opacity='0.15'/%3E%3C/svg%3E");
+  opacity: 1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cpath d='M0 32 L32 0 L64 32 L32 64 Z' fill='none' stroke='%238c6b43' stroke-opacity='0.22' stroke-width='1.2'/%3E%3Cpath d='M16 32 L32 16 L48 32 L32 48 Z' fill='none' stroke='%238c6b43' stroke-opacity='0.20' stroke-width='1'/%3E%3Cpath d='M0 0 L64 64 M64 0 L0 64' fill='none' stroke='%238c6b43' stroke-opacity='0.16' stroke-width='0.9' stroke-dasharray='4,3'/%3E%3Cpath d='M32 0 L32 64 M0 32 L64 32' fill='none' stroke='%238c6b43' stroke-opacity='0.16' stroke-width='0.9'/%3E%3Cpath d='M0 16 L16 0 M48 0 L64 16 M64 48 L48 64 M16 64 L0 48' fill='none' stroke='%238c6b43' stroke-opacity='0.18' stroke-width='1'/%3E%3Ccircle cx='32' cy='32' r='2.5' fill='%238c6b43' fill-opacity='0.28'/%3E%3C/svg%3E");
   background-size: 64px 64px;
 }
 
@@ -1254,6 +1261,187 @@ body.theme-light .modal-backdrop {
   font-size: 0.85rem;
   color: var(--text-main);
   line-height: 1.45;
+}
+
+/* Dual-Branch Decision Section (Grind Mode vs. Solution Reveal) */
+.decision-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.decision-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.decision-card {
+  background: var(--bg-glass-card-alt);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.decision-card:hover {
+  border-color: var(--border-glass-medium);
+  background: var(--bg-glass-card);
+}
+
+.decision-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.decision-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+
+.badge-grind {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.badge-surrender {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border: 1px solid var(--border-glass);
+}
+
+.grit-meter {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  color: var(--accent-emerald);
+}
+
+.decision-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.decision-card h4 {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.decision-card p {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  flex: 1;
+}
+
+.btn-grind {
+  width: 100%;
+  font-size: 0.78rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-grind:hover {
+  background: #ffffff;
+  color: #000000;
+}
+
+.btn-reveal {
+  width: 100%;
+  font-size: 0.78rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border-glass);
+  color: var(--text-secondary);
+}
+
+.btn-reveal:hover {
+  border-color: var(--border-glass-medium);
+  color: #ffffff;
+}
+
+/* Solution Breakdown Box */
+.solution-breakdown-box {
+  background: var(--bg-glass-input);
+  border: 1px solid var(--border-glass-medium);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  animation: tabFadeIn 0.25s ease-out;
+}
+
+.breakdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.breakdown-msg {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  font-style: italic;
+  border-left: 2px solid var(--accent-emerald);
+  padding-left: 0.6rem;
+}
+
+.breakdown-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.breakdown-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.breakdown-item.full-width {
+  grid-column: span 2;
+}
+
+.breakdown-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+}
+
+.breakdown-code {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-glass);
+  color: #ffffff;
+  word-break: break-all;
+}
+
+.breakdown-code.code-correct {
+  color: var(--accent-emerald);
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.breakdown-text {
+  font-size: 0.82rem;
+  color: var(--text-main);
+  line-height: 1.4;
 }
 
 /* Stats Modal */

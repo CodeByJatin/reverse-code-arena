@@ -12,6 +12,7 @@ let totalPausedDuration = 0;
 let pauseStartTime = null;
 let isSessionActive = false;
 let isPaused = false;
+let gritRetriesCount = parseInt(localStorage.getItem('rca_grit_retries') || '0', 10);
 
 // Determine API Base URL
 const API_BASE = window.location.origin.includes('localhost:8000') || window.location.origin.includes('127.0.0.1:8000')
@@ -22,7 +23,18 @@ document.addEventListener('DOMContentLoaded', () => {
   initWorkbench();
 });
 
+function updateGritUI() {
+  const topbarGrit = document.getElementById('topbar-grit-badge');
+  const modalGrit = document.getElementById('modal-grit-count');
+  const label = `Grit: ${gritRetriesCount} ${gritRetriesCount === 1 ? 'Retry' : 'Retries'}`;
+  if (topbarGrit) topbarGrit.textContent = label;
+  if (modalGrit) modalGrit.textContent = label;
+}
+
 function initWorkbench() {
+  // Update Grit UI from memory
+  updateGritUI();
+
   // 1. Theme Mode Management (Light / Dark with localStorage persistence)
   initTheme();
 
@@ -86,7 +98,26 @@ function initWorkbench() {
     closeModalBtn.addEventListener('click', closeResultModal);
   }
 
-  // 9. Stagnation Toast Close
+  // 9. Grind Mode & Reveal Solution Actions
+  const retryGrindBtn = document.getElementById('btn-retry-grind');
+  if (retryGrindBtn) {
+    retryGrindBtn.addEventListener('click', handleRetryGrind);
+  }
+  const revealBtn = document.getElementById('btn-reveal-solution');
+  if (revealBtn) {
+    revealBtn.addEventListener('click', handleRevealSolution);
+  }
+  const topbarRevealBtn = document.getElementById('btn-topbar-reveal');
+  if (topbarRevealBtn) {
+    topbarRevealBtn.addEventListener('click', () => {
+      if (!currentChallenge) return;
+      const modal = document.getElementById('result-modal');
+      if (modal) modal.style.display = 'flex';
+      handleRevealSolution();
+    });
+  }
+
+  // 10. Stagnation Toast Close
   const toastClose = document.getElementById('toast-close');
   if (toastClose) {
     toastClose.addEventListener('click', () => {
@@ -94,7 +125,7 @@ function initWorkbench() {
     });
   }
 
-  // 10. Keyboard Shortcuts (Ctrl+Enter / Cmd+Enter to submit, Esc to close modals)
+  // 11. Keyboard Shortcuts (Ctrl+Enter / Cmd+Enter to submit, Esc to close modals)
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       if (isSessionActive && !isPaused && selected_line) {
@@ -621,12 +652,109 @@ function renderResultModal(result) {
   }
 
   feedbackEl.textContent = comp.feedback || 'Evaluation completed.';
+
+  // Reset Solution Breakdown Box state
+  const breakdownBox = document.getElementById('solution-breakdown-box');
+  if (breakdownBox) breakdownBox.style.display = 'none';
+
+  const revealBtn = document.getElementById('btn-reveal-solution');
+  if (revealBtn) {
+    revealBtn.disabled = false;
+    revealBtn.textContent = 'Reveal Verified Solution';
+  }
+
+  // Update Grit counts in UI
+  updateGritUI();
+
   modal.style.display = 'flex';
 }
 
 function closeResultModal() {
   const modal = document.getElementById('result-modal');
   if (modal) modal.style.display = 'none';
+}
+
+/**
+ * Handle user choosing the 'Grind Mode: Try Again' option
+ * Increments persistence metric, logs to memory, and re-focuses form with scaffolding
+ */
+function handleRetryGrind() {
+  gritRetriesCount++;
+  localStorage.setItem('rca_grit_retries', gritRetriesCount);
+  updateGritUI();
+  closeResultModal();
+
+  // Highlight and focus the expected behavior input
+  const expInput = document.getElementById('input-expected');
+  if (expInput) {
+    expInput.focus();
+    expInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // Trigger anti-stagnation nudge with concrete tracing hint
+  showStagnationNudge();
+}
+
+/**
+ * Handle user choosing 'End Exercise & Reveal Solution'
+ * Fetches verified solution, 1-line fix, and author's flawed assumption from backend
+ */
+async function handleRevealSolution() {
+  if (!currentChallenge) return;
+
+  const revealBtn = document.getElementById('btn-reveal-solution');
+  if (revealBtn) {
+    revealBtn.disabled = true;
+    revealBtn.textContent = 'Retrieving Verified Solution...';
+  }
+
+  try {
+    const resp = await fetch(`${API_BASE}/api/reveal`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challenge_id: currentChallenge.id }),
+    });
+
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    }
+
+    const data = await resp.json();
+
+    const breakdownBox = document.getElementById('solution-breakdown-box');
+    const msgEl = document.getElementById('breakdown-pedagogical-msg');
+    const buggyLineEl = document.getElementById('breakdown-buggy-line');
+    const correctLineEl = document.getElementById('breakdown-correct-line');
+    const assumptionEl = document.getElementById('breakdown-assumption');
+    const edgeTestEl = document.getElementById('breakdown-edge-test');
+
+    if (msgEl) msgEl.textContent = data.pedagogical_message;
+    if (buggyLineEl) buggyLineEl.textContent = `Line ${data.buggy_line_number}`;
+    if (correctLineEl) correctLineEl.textContent = data.correct_line;
+    if (assumptionEl) assumptionEl.textContent = data.flawed_assumption;
+    if (edgeTestEl) {
+      const inp = data.edge_case_test && data.edge_case_test.input ? JSON.stringify(data.edge_case_test.input) : 'N/A';
+      const exp = data.edge_case_test && data.edge_case_test.expected !== undefined ? JSON.stringify(data.edge_case_test.expected) : 'N/A';
+      edgeTestEl.textContent = `Input: ${inp} => Expected: ${exp}`;
+    }
+
+    if (breakdownBox) {
+      breakdownBox.style.display = 'flex';
+      breakdownBox.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    if (revealBtn) {
+      revealBtn.textContent = 'Solution Unlocked';
+      revealBtn.disabled = true;
+    }
+  } catch (err) {
+    console.error('Failed to reveal solution:', err);
+    alert('Could not retrieve solution breakdown from the server.');
+    if (revealBtn) {
+      revealBtn.disabled = false;
+      revealBtn.textContent = 'Reveal Verified Solution';
+    }
+  }
 }
 
 /**

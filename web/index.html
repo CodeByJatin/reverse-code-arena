@@ -30,6 +30,7 @@
         <div class="challenge-pill-group">
           <span class="badge badge-difficulty" id="badge-difficulty" data-tooltip="Challenge difficulty tier based on fault complexity">Easy</span>
           <span class="badge badge-bug" id="bug-type-badge" data-tooltip="Defect classification seeded in this verification challenge">Bug: Scanning...</span>
+          <span class="badge badge-bug" id="topbar-grit-badge" data-tooltip="Grit Tracker: Attempts made in Grind Mode without revealing the answer">Grit: 0 Retries</span>
         </div>
       </div>
 
@@ -51,6 +52,14 @@
         </button>
 
         <!-- Session Controls -->
+        <button class="btn btn-tool" id="btn-topbar-reveal" title="End current exercise and inspect verified solution breakdown">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
+          <span>End Exercise</span>
+        </button>
         <button class="btn btn-tool" id="btn-pause" title="Pause session to take a breath (freezes cognitive timers)">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="6" y="4" width="4" height="16"></rect>
@@ -402,8 +411,68 @@
 
       <!-- Pedagogical CoT Feedback (Zhao et al.) -->
       <div class="feedback-card">
-        <div class="feedback-label">Pedagogical Feedback (Zero-Leakage Guarded):</div>
+        <div class="feedback-label">Pedagogical Diagnostic Clue (Zero-Leakage):</div>
         <p class="feedback-body" id="modal-feedback">Feedback message...</p>
+      </div>
+
+      <!-- Dual-Branch Learning Decision (Grind Mode vs. Solution Reveal) -->
+      <div class="decision-section" id="decision-section">
+        <div class="decision-grid">
+          <!-- Branch 1: Grind & Hustle Mode -->
+          <div class="decision-card grind-card">
+            <div class="decision-header">
+              <span class="decision-badge badge-grind">Grind &amp; Hustle Mode</span>
+              <span class="grit-meter" id="modal-grit-count">Grit: 0 Retries</span>
+            </div>
+            <h4>Embrace the Friction</h4>
+            <p>True debugging mastery comes from working through the struggle. Refine your hypothesis using the diagnostic clue above with zero answer spoilers.</p>
+            <button class="btn btn-secondary btn-grind" id="btn-retry-grind">
+              Keep Grinding: Try Again
+            </button>
+          </div>
+
+          <!-- Branch 2: Surrender & Reveal Solution -->
+          <div class="decision-card surrender-card">
+            <div class="decision-header">
+              <span class="decision-badge badge-surrender">End Exercise Option</span>
+              <span class="decision-sub">Tried Everything?</span>
+            </div>
+            <h4>Inspect Master Solution</h4>
+            <p>If you have hit a cognitive wall and exhausted your attempts, inspect the verified 1-line fix and the author's false assumption to learn from it.</p>
+            <button class="btn btn-tool btn-reveal" id="btn-reveal-solution">
+              Reveal Verified Solution
+            </button>
+          </div>
+        </div>
+
+        <!-- Hidden Solution Breakdown Container (revealed on click) -->
+        <div class="solution-breakdown-box" id="solution-breakdown-box" style="display: none;">
+          <div class="breakdown-header">
+            <span class="section-label">Master Solution Breakdown</span>
+            <span class="badge badge-difficulty">Author's Reference</span>
+          </div>
+          <p class="breakdown-msg" id="breakdown-pedagogical-msg">
+            Recognizing when to study the verified reference is a valid engineering tactic.
+          </p>
+          <div class="breakdown-details-grid">
+            <div class="breakdown-item">
+              <span class="breakdown-label">Defective Code Line:</span>
+              <code class="breakdown-code" id="breakdown-buggy-line">Line ...</code>
+            </div>
+            <div class="breakdown-item">
+              <span class="breakdown-label">1-Line Surgical Fix:</span>
+              <code class="breakdown-code code-correct" id="breakdown-correct-line">for i in range(len(numbers)):</code>
+            </div>
+            <div class="breakdown-item full-width">
+              <span class="breakdown-label">Author's Flawed Assumption:</span>
+              <p class="breakdown-text" id="breakdown-assumption">...</p>
+            </div>
+            <div class="breakdown-item full-width">
+              <span class="breakdown-label">Hidden Edge Case Test Input:</span>
+              <code class="breakdown-code" id="breakdown-edge-test">...</code>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="modal-actions">

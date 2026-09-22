@@ -109,6 +109,31 @@ def submit_attempt(attempt: Attempt):
     return result
 
 
+from pydantic import BaseModel
+class RevealRequest(BaseModel):
+    challenge_id: str
+
+@app.post("/api/reveal")
+def reveal_solution(req: RevealRequest):
+    """
+    Reveals the verified ground truth solution, flawed assumption, and edge-case test
+    for the specified challenge, logging that the student requested the breakdown.
+    """
+    seeded = _load_seeded_challenges()
+    challenge = next((c for c in seeded if c.id == req.challenge_id), STUB_CHALLENGE)
+
+    edge_data = challenge.edge_case_test.model_dump() if hasattr(challenge.edge_case_test, "model_dump") else challenge.edge_case_test
+
+    return {
+        "challenge_id": challenge.id,
+        "buggy_line_number": challenge.buggy_line_number,
+        "correct_line": challenge.correct_line,
+        "flawed_assumption": challenge.flawed_assumption,
+        "edge_case_test": edge_data,
+        "pedagogical_message": "Recognizing when to study the verified reference is a valid engineering skill. Carefully examine the author's false assumption below, observe how the surgical 1-line fix restores edge-case correctness, and take what you've learned into your next audit!"
+    }
+
+
 @app.get("/api/stats")
 def get_stats():
     """

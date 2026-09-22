@@ -53,18 +53,19 @@ Evaluation Rubric (Score 0 to 3):
 - 1: Surface or Vague. Vaguely in the right area, or selected the right line for a flawed/coincidental reason.
 - 0: Wrong or Empty. Missed the bug entirely, incorrect explanation, or unrelated reasoning.
 
-CRITICAL PEDAGOGICAL & SECURITY INSTRUCTION (Zhao et al., 2026):
-- You must NEVER disclose or state the exact correct line of code or the exact buggy line number in your feedback.
+CRITICAL PEDAGOGICAL & ACTIONABILITY INSTRUCTION (Zhao et al., 2026; Zhang, 2026):
+- NEVER give vague generic platitudes (e.g. "Review your code", "Try again", "Keep reading").
+- Provide sharp, concrete socratic diagnostic guidance: point out the specific conceptual angle or suggest a concrete input to trace (e.g. "Trace the function with a single-element list or inspect whether the loop reaches the final index"), while strictly keeping the exact correct line of code and the exact buggy line number concealed.
 - First produce a hidden 'reason' field planning your pedagogical evaluation.
 - Then produce a 'leak_check' confirming no answer disclosure.
-- Finally produce 'feedback' for the student that gives constructive guidance.
+- Finally produce 'feedback' for the student: 2-3 sentences of sharp, insightful diagnostic guidance that directs their focus to the exact boundary or false mental rule they missed.
 
 Return ONLY a strict JSON object with this schema:
 {{
   "reason": "Internal pedagogical evaluation analysis",
   "leak_check": "Confirmed no correct line or line number disclosed",
   "score": 2,
-  "feedback": "Constructive 1-2 sentence feedback for the student"
+  "feedback": "Sharp, insightful diagnostic guidance for the student"
 }}
 """
 
@@ -116,7 +117,8 @@ except Exception:
 def _heuristic_comprehension_score(attempt: Attempt, challenge: Challenge, line_correct: bool, fix_passes: bool) -> Tuple[int, str]:
     """
     Intelligent heuristic fallback when LLM quota is temporarily paused.
-    Analyzes conceptual overlap between student explanation and ground truth assumption.
+    Analyzes conceptual overlap between student explanation and ground truth assumption,
+    and returns a concrete, non-vague diagnostic hint.
     """
     text = f"{attempt.expected_behavior or ''} {attempt.observed_flaw or ''} {attempt.explanation}".lower()
     assumption_words = set(re.findall(r"\b\w{4,}\b", challenge.flawed_assumption.lower()))
@@ -130,21 +132,30 @@ def _heuristic_comprehension_score(attempt: Attempt, challenge: Challenge, line_
         "boundary_inclusive": ["greater", "equal", "strictly", "inclusive", "threshold", "cutoff", "boundary"],
     }
 
+    diagnostic_clues = {
+        "off_by_one": "Inspect the loop boundary logic. In Python, range(n) stops at n-1. When an author writes range(len - 1), trace what index is reached on the final iteration.",
+        "mutable_default": "Look at the function signature parameters. Default argument objects are created once at definition time, not on each call.",
+        "shallow_copy": "Trace how mutations to nested elements affect both copies. Slicing or shallow-copying only duplicates the outer container.",
+        "int_division": "Examine the division operator. Integer division truncates down, discarding fractional portions.",
+        "boundary_inclusive": "Analyze the comparison operator at the boundary condition. Does the contract specify strictly greater than, or should exact boundary matches be retained?",
+    }
+    clue = diagnostic_clues.get(challenge.bug_type, "Trace intermediate variable states with a boundary case like an empty or edge-value input.")
+
     type_kw = keywords_by_type.get(challenge.bug_type, ["loop", "condition", "return"])
     matched_type_kw = [kw for kw in type_kw if kw in text]
     matched_assumption_words = [w for w in assumption_words if w in text]
 
     if line_correct or fix_passes:
         if len(matched_assumption_words) >= 2 or len(matched_type_kw) >= 2:
-            return 3, "Excellent! You pinpointed the exact bug and articulated the author's flawed assumption accurately."
+            return 3, f"Accurate Diagnosis! You identified the exact fault and articulated the author's false assumption. {clue}"
         elif len(matched_type_kw) >= 1 or len(matched_assumption_words) >= 1:
-            return 2, "Good work. You correctly identified the symptom and mechanism, but could more clearly articulate the underlying mental assumption."
+            return 2, f"Mechanism Understood: You caught the defect symptom, but haven't fully articulated the author's underlying misconception. {clue}"
         else:
-            return 1, "You identified the correct line/fix, but your explanation does not explain the author's flawed assumption (Copilot-style fix)."
+            return 1, f"Copilot-Style Patch: You located the line or fix, but missed the underlying mental model. {clue}"
     else:
         if len(matched_type_kw) >= 2:
-            return 1, "You recognized the type of flawed pattern, but selected the incorrect line."
-        return 0, "Your explanation and selected line did not locate the bug or its cause."
+            return 1, f"Conceptual Catch, Misplaced Line: You recognized the bug category, but pinpointed the wrong code statement. {clue}"
+        return 0, f"Unidentified Defect: Neither the line nor the explanation captured the bug. {clue}"
 
 
 def grade_attempt(attempt: Attempt, challenge: Challenge) -> Result:
