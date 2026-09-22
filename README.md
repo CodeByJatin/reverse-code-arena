@@ -338,8 +338,8 @@ python engine/seed.py
 
 | Contributor | Role |
 |---|---|
-| **Shivank Verma** | Backend engine — generation, verification, seeding, adversarial benchmark, API |
-| **Jatin** | Frontend UI — hypothesis-first form, stagnation timer, grading engine, result modal, README |
+| **Shivank Verma** ([@ShivankVerma48](https://github.com/ShivankVerma48)) | Backend engine — generation, verification, seeding, adversarial benchmark, API |
+| **Jatin Garg** ([@CodeByJatin](https://github.com/CodeByJatin)) | Frontend UI — hypothesis-first form, stagnation timer, grading engine, result modal, README |
 
 *Built for the Horizon Research Showcase — Sept 25, 2026.*
 
