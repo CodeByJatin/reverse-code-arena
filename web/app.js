@@ -429,21 +429,21 @@ function updateSelectedLineUI(lineNum) {
 
   if (lineNum !== null && lineNum !== undefined) {
     indicator.textContent = `Selected: Line ${lineNum}`;
-    indicator.style.color = 'var(--accent-cyan)';
-    indicator.style.borderColor = 'var(--accent-cyan)';
+    indicator.style.color = '#ffffff';
+    indicator.style.borderColor = 'rgba(255, 255, 255, 0.4)';
 
     formSelectedLine.textContent = `Line ${lineNum}`;
-    formSelectedLine.style.color = 'var(--accent-cyan)';
+    formSelectedLine.style.color = '#ffffff';
 
     if (emptyState) emptyState.style.display = 'none';
     if (activeForm) activeForm.style.display = 'flex';
   } else {
     indicator.textContent = 'Click a line to locate fault';
-    indicator.style.color = 'var(--accent-cyan)';
-    indicator.style.borderColor = 'rgba(56, 189, 248, 0.2)';
+    indicator.style.color = '#ffffff';
+    indicator.style.borderColor = 'rgba(255, 255, 255, 0.18)';
 
     formSelectedLine.textContent = 'No line selected';
-    formSelectedLine.style.color = 'var(--text-dim)';
+    formSelectedLine.style.color = 'var(--text-muted)';
 
     if (emptyState) emptyState.style.display = 'flex';
     if (activeForm) activeForm.style.display = 'none';
