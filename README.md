@@ -347,4 +347,4 @@ python engine/seed.py
 
 ## License
 
-MIT © 2026 Shivank Verma & Jatin
+MIT © 2026 Shivank Verma & Jatin Garg
