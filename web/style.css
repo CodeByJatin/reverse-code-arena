@@ -699,6 +699,45 @@ body.theme-light .function-sig {
   color: var(--text-secondary);
 }
 
+body.theme-light .editor-tab {
+  color: #1c1917;
+  font-weight: 600;
+}
+
+.tab-filename {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+body.theme-light .tab-filename {
+  color: #1c1917;
+  font-weight: 600;
+}
+
+.lang-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.14rem 0.46rem;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.theme-light .lang-tag {
+  background: #1c1917;
+  color: #ffffff;
+  border: 1px solid #1c1917;
+  font-weight: 800;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
+}
+
 .selection-pill {
   font-size: 0.75rem;
   color: #ffffff;
@@ -707,12 +746,29 @@ body.theme-light .function-sig {
   padding: 0.2rem 0.65rem;
   border-radius: var(--radius-pill);
   font-family: var(--font-mono);
+  transition: all 0.2s ease;
+}
+
+.selection-pill.active-selected {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.20);
+  border-color: rgba(255, 255, 255, 0.55);
+  font-weight: 600;
 }
 
 body.theme-light .selection-pill {
-  color: var(--text-main);
-  background: rgba(0, 0, 0, 0.05);
-  border-color: var(--border-glass-medium);
+  color: #44403c;
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.20);
+  font-weight: 500;
+}
+
+body.theme-light .selection-pill.active-selected {
+  color: #ffffff;
+  background: #1c1917;
+  border-color: #1c1917;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
 .code-viewport {
@@ -807,18 +863,45 @@ body.theme-light .code-row.selected .code-line-num {
 }
 
 .console-selected-line {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-family: var(--font-mono);
   color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+body.theme-light .console-selected-line {
+  color: #1c1917;
+  font-weight: 600;
 }
 
 .highlight-line-val {
   color: #ffffff;
-  font-weight: 600;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 0.15rem 0.55rem;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  letter-spacing: 0.02em;
+  font-family: var(--font-mono);
+  transition: all 0.2s ease;
 }
 
 body.theme-light .highlight-line-val {
-  color: var(--text-main);
+  color: #1c1917 !important;
+  background: #ebe4d8;
+  border: 1px solid #78716c;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+body.theme-light .highlight-line-val.active-selected {
+  background: #1c1917;
+  color: #ffffff !important;
+  border: 1px solid #1c1917;
+  font-weight: 800;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
 /* Empty State */
@@ -831,6 +914,18 @@ body.theme-light .highlight-line-val {
   padding: 2rem;
   text-align: center;
   gap: 0.35rem;
+}
+
+.empty-icon {
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.25rem;
+}
+
+body.theme-light .empty-icon {
+  color: var(--text-muted);
 }
 
 .empty-title {
@@ -1559,3 +1654,34 @@ body.theme-light .stat-number {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   Circular Ripple Theme Transitions (View Transitions API)
+   ========================================================================== */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  display: block;
+}
+
+::view-transition-group(root) {
+  animation-duration: 0.65s;
+}
+
+/* Dark -> Light: Light expands outward in circle to full screen on top */
+.theme-transition-to-light::view-transition-old(root) {
+  z-index: 1;
+}
+.theme-transition-to-light::view-transition-new(root) {
+  z-index: 9999;
+}
+
+/* Light -> Dark: Light collapses inward into button on top of dark */
+.theme-transition-to-dark::view-transition-new(root) {
+  z-index: 1;
+}
+.theme-transition-to-dark::view-transition-old(root) {
+  z-index: 9999;
+}
+

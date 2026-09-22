@@ -142,8 +142,10 @@ function initWorkbench() {
   fetchChallenge(false);
 }
 
+let isThemeTransitioning = false;
+
 /**
- * Initialize Light / Dark Mode Toggle with persistence
+ * Initialize Light / Dark Mode Toggle with persistence & circular ripple transition
  */
 function initTheme() {
   const savedTheme = localStorage.getItem('rca_theme') || 'dark';
@@ -151,13 +153,90 @@ function initTheme() {
 
   const toggleBtn = document.getElementById('btn-theme-toggle');
   if (toggleBtn) {
-    toggleBtn.addEventListener('click', () => {
+    toggleBtn.addEventListener('click', (e) => {
+      if (isThemeTransitioning) return;
       const isCurrentlyLight = document.body.classList.contains('theme-light');
       const targetTheme = isCurrentlyLight ? 'dark' : 'light';
-      applyTheme(targetTheme);
-      localStorage.setItem('rca_theme', targetTheme);
+      toggleThemeWithCircularTransition(targetTheme, e);
     });
   }
+}
+
+/**
+ * Perform circular expanding (dark -> light) and collapsing (light -> dark) view transition
+ */
+function toggleThemeWithCircularTransition(targetTheme, event) {
+  // If View Transitions API is not supported or user prefers reduced motion
+  if (!document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    applyTheme(targetTheme);
+    localStorage.setItem('rca_theme', targetTheme);
+    return;
+  }
+
+  isThemeTransitioning = true;
+  const toggleBtn = document.getElementById('btn-theme-toggle');
+  let x = window.innerWidth - 80;
+  let y = 27;
+
+  if (toggleBtn) {
+    const rect = toggleBtn.getBoundingClientRect();
+    x = rect.left + rect.width / 2;
+    y = rect.top + rect.height / 2;
+  }
+
+  const endRadius = Math.hypot(
+    Math.max(x, window.innerWidth - x),
+    Math.max(y, window.innerHeight - y)
+  );
+
+  const transitionClass = targetTheme === 'light' ? 'theme-transition-to-light' : 'theme-transition-to-dark';
+  document.documentElement.classList.add(transitionClass);
+
+  const transition = document.startViewTransition(() => {
+    applyTheme(targetTheme);
+    localStorage.setItem('rca_theme', targetTheme);
+  });
+
+  transition.ready.then(() => {
+    if (targetTheme === 'light') {
+      // Dark to Light: Light starts from the button and expands outward in a circle to full screen
+      document.documentElement.animate(
+        {
+          clipPath: [
+            `circle(0px at ${x}px ${y}px)`,
+            `circle(${endRadius}px at ${x}px ${y}px)`
+          ]
+        },
+        {
+          duration: 650,
+          easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+          pseudoElement: '::view-transition-new(root)'
+        }
+      );
+    } else {
+      // Light to Dark: Light collapses from the outer edges of the screen inward into the button
+      document.documentElement.animate(
+        {
+          clipPath: [
+            `circle(${endRadius}px at ${x}px ${y}px)`,
+            `circle(0px at ${x}px ${y}px)`
+          ]
+        },
+        {
+          duration: 650,
+          easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+          pseudoElement: '::view-transition-old(root)'
+        }
+      );
+    }
+  }).catch((err) => {
+    console.warn('View transition animation warning:', err);
+  });
+
+  transition.finished.finally(() => {
+    document.documentElement.classList.remove(transitionClass);
+    isThemeTransitioning = false;
+  });
 }
 
 function applyTheme(theme) {
@@ -459,22 +538,34 @@ function updateSelectedLineUI(lineNum) {
   const activeForm = document.getElementById('attempt-form');
 
   if (lineNum !== null && lineNum !== undefined) {
-    indicator.textContent = `Selected: Line ${lineNum}`;
-    indicator.style.color = '#ffffff';
-    indicator.style.borderColor = 'rgba(255, 255, 255, 0.4)';
+    if (indicator) {
+      indicator.textContent = `Selected: Line ${lineNum}`;
+      indicator.classList.add('active-selected');
+      indicator.style.color = '';
+      indicator.style.borderColor = '';
+    }
 
-    formSelectedLine.textContent = `Line ${lineNum}`;
-    formSelectedLine.style.color = '#ffffff';
+    if (formSelectedLine) {
+      formSelectedLine.textContent = `Line ${lineNum}`;
+      formSelectedLine.classList.add('active-selected');
+      formSelectedLine.style.color = '';
+    }
 
     if (emptyState) emptyState.style.display = 'none';
     if (activeForm) activeForm.style.display = 'flex';
   } else {
-    indicator.textContent = 'Click a line to locate fault';
-    indicator.style.color = '#ffffff';
-    indicator.style.borderColor = 'rgba(255, 255, 255, 0.18)';
+    if (indicator) {
+      indicator.textContent = 'Click a line to locate fault';
+      indicator.classList.remove('active-selected');
+      indicator.style.color = '';
+      indicator.style.borderColor = '';
+    }
 
-    formSelectedLine.textContent = 'No line selected';
-    formSelectedLine.style.color = 'var(--text-muted)';
+    if (formSelectedLine) {
+      formSelectedLine.textContent = 'No line selected';
+      formSelectedLine.classList.remove('active-selected');
+      formSelectedLine.style.color = '';
+    }
 
     if (emptyState) emptyState.style.display = 'flex';
     if (activeForm) activeForm.style.display = 'none';
