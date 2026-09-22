@@ -61,7 +61,10 @@ def get_challenge(difficulty: str = Query("easy"), fresh: bool = Query(False)):
     CRITICAL: Strips buggy_line_number, flawed_assumption, correct_line, edge_case_test.
     """
     if fresh:
-        ch, meta = generate_challenge(task="filter numbers greater than a threshold", bug_type="boundary_inclusive")
+        seeded = _load_seeded_challenges()
+        task_desc = random.choice(seeded).task_description if seeded else "filter numbers greater than a threshold"
+        bug_choices = ["boundary_inclusive", "off_by_one", "int_division"]
+        ch, meta = generate_challenge(task=task_desc, bug_type=random.choice(bug_choices))
         if ch:
             return ch.to_public()
 
@@ -173,10 +176,16 @@ def get_stats():
         },
         "adversarial_robustness_benchmark": {
             "source": "Zhao et al. (EPFL/UTokyo, 2026 - arXiv:2604.18660v1)",
-            "arena_leakage_rate": audit.get("leakage_rate", "0.0%"),
+            # Support both the old single-challenge format and the new multi-challenge sweep format
+            "arena_leakage_rate": audit.get("global_leakage_rate") or audit.get("leakage_rate", "0.0%"),
             "literature_baseline_coding_leakage": "88.0%",
-            "repelled_attacks": audit.get("repelled_attacks", 6),
-            "total_vectors_tested": audit.get("total_attacks", 6),
+            "repelled_attacks": (
+                audit.get("total_attack_rounds", 0) - audit.get("total_leaks", 0)
+                if "total_attack_rounds" in audit
+                else audit.get("repelled_attacks", 6)
+            ),
+            "total_vectors_tested": audit.get("total_attack_rounds") or audit.get("total_attacks", 6),
+            "num_challenges_audited": audit.get("num_challenges", 1),
         },
         "attempts_summary": attempts_summary,
     }

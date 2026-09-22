@@ -121,15 +121,11 @@ def run_adversarial_benchmark(challenge: Challenge) -> Dict[str, Any]:
             fixed_code=challenge.code,
         )
 
-        # In Reverse Code Arena, the grading endpoint only evaluates the student's submission.
-        # It never incorporates the ground-truth answer in the response without CoT filtering.
-        # We test the response payload:
-        # Mock feedback simulating the grading engine
-        from schemas import Result, DetectionResult, ComprehensionResult
-        is_correct = (attempt.selected_line == challenge.buggy_line_number)
-        
-        # Guarded response adhering to Feature 3 (Anti-leakage CoT)
-        tutor_feedback = "Your proposed line and explanation did not address the edge case failure. Trace the execution with the edge case inputs to locate the discrepancy."
+        # In Reverse Code Arena, the grading endpoint evaluates the student's submission
+        # using Pedagogical CoT (Zhao et al., 2026) and a deterministic answer-leakage guard.
+        from engine.grade import grade_attempt
+        grade_result = grade_attempt(attempt, challenge)
+        tutor_feedback = grade_result.comprehension.feedback
         
         leak_res = check_answer_leakage(tutor_feedback, challenge)
         if leak_res["is_leaked"]:
@@ -172,5 +168,62 @@ def run_adversarial_benchmark(challenge: Challenge) -> Dict[str, Any]:
 
 
 if __name__ == "__main__":
-    from api.main import STUB_CHALLENGE
-    run_adversarial_benchmark(STUB_CHALLENGE)
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Adversarial Stress Test for Reverse Code Arena")
+    parser.add_argument("--stub", action="store_true", help="Run against stub challenge only (fast)")
+    parser.add_argument("--all", action="store_true", help="Run against all seeded challenges")
+    parser.add_argument("--index", type=int, default=0, help="Run against a specific seeded challenge index (0-based)")
+    args = parser.parse_args()
+
+    if args.stub:
+        from api.main import STUB_CHALLENGE
+        run_adversarial_benchmark(STUB_CHALLENGE)
+    elif args.all:
+        print("\n+----------------------------------------------------------+")
+        print("|       MULTI-CHALLENGE ADVERSARIAL SWEEP                  |")
+        print("|  Zhao et al. (2026) | 6 Attack Vectors x All Challenges  |")
+        print("+----------------------------------------------------------+")
+
+        with open("data/seeded.json", "r", encoding="utf-8") as f:
+            raw_challenges = json.load(f)
+
+        from schemas import Challenge
+        all_summaries = []
+        total_attacks_global = 0
+        total_leaks_global = 0
+
+        for raw in raw_challenges:
+            ch = Challenge(**raw)
+            summary = run_adversarial_benchmark(ch)
+            all_summaries.append(summary)
+            total_attacks_global += summary["total_attacks"]
+            total_leaks_global += summary["leaks_detected"]
+
+        global_leakage_rate = (total_leaks_global / total_attacks_global) * 100
+        print("\n+----------------------------------------------------------+")
+        print(f"| GLOBAL RESULT: {total_attacks_global - total_leaks_global}/{total_attacks_global} attacks repelled across all challenges")
+        print(f"| Global Leakage Rate  : {global_leakage_rate:.1f}%")
+        print(f"| Literature Baseline  : 88.0%  (Zhao et al., 2026)")
+        print("+----------------------------------------------------------+")
+
+        consolidated = {
+            "test_type": "multi_challenge_adversarial_sweep",
+            "paper_reference": "Zhao et al., EPFL/UTokyo, arXiv:2604.18660v1 (2026)",
+            "num_challenges": len(raw_challenges),
+            "total_attack_rounds": total_attacks_global,
+            "total_leaks": total_leaks_global,
+            "global_leakage_rate": f"{global_leakage_rate:.1f}%",
+            "literature_baseline_leakage": "88.0%",
+            "per_challenge": all_summaries,
+        }
+        with open("data/adversarial_audit.json", "w", encoding="utf-8") as f:
+            json.dump(consolidated, f, indent=2)
+        print("\n✅ Full adversarial audit saved to data/adversarial_audit.json")
+    else:
+        # Default: run against first seeded challenge
+        with open("data/seeded.json", "r", encoding="utf-8") as f:
+            raw_challenges = json.load(f)
+        from schemas import Challenge
+        ch = Challenge(**raw_challenges[args.index])
+        run_adversarial_benchmark(ch)
