@@ -1,0 +1,187 @@
+[
+  {
+    "id": "ch_off_by_one_be9755",
+    "task_description": "Find the maximum element in a list of numbers. Returns None if the list is empty.",
+    "function_name": "find_maximum",
+    "code": "def find_maximum(numbers):\n    \"\"\"\n    Finds and returns the maximum number in a list of numbers.\n    Returns None if the list is empty.\n    \"\"\"\n    if not isinstance(numbers, list):\n        raise TypeError(\"Input must be a list\")\n    \n    if len(numbers) == 0:\n        return None\n    \n    max_value = numbers[0]\n    list_length = len(numbers)\n    \n    for index in range(1, list_length - 1):\n        current_value = numbers[index]\n        if current_value > max_value:\n            max_value = current_value\n            \n    return max_value",
+    "num_lines": 20,
+    "bug_type": "off_by_one",
+    "buggy_line_number": 15,
+    "flawed_assumption": "range() covers the last element or boundary element",
+    "passing_tests": [
+      {
+        "input": [
+          [
+            10,
+            20,
+            5
+          ]
+        ],
+        "expected": 20
+      },
+      {
+        "input": [
+          [
+            100,
+            50,
+            20,
+            10
+          ]
+        ],
+        "expected": 100
+      },
+      {
+        "input": [
+          [
+            -5,
+            -2,
+            -10,
+            -15
+          ]
+        ],
+        "expected": -2
+      }
+    ],
+    "edge_case_test": {
+      "input": [
+        [
+          1,
+          2,
+          3
+        ]
+      ],
+      "expected": 3
+    },
+    "correct_line": "    for index in range(1, list_length):"
+  },
+  {
+    "id": "ch_boundary_inclusive_82bbd6",
+    "task_description": "Filters a list of numeric values, returning a new list containing only the elements that are greater than or equal to the specified threshold. Non-numeric values in the input list are ignored.",
+    "function_name": "filter_by_threshold",
+    "code": "def filter_by_threshold(data, threshold):\n    \"\"\"\n    Filters a list of numeric values, returning a new list containing\n    only the elements that are greater than or equal to the specified threshold.\n    Non-numeric values in the input list are ignored.\n    \"\"\"\n    if not isinstance(data, list):\n        raise TypeError(\"Input data must be a list\")\n    filtered_results = []\n    for item in data:\n        if not isinstance(item, (int, float)):\n            continue\n        if item > threshold:\n            filtered_results.append(item)\n    return filtered_results",
+    "num_lines": 15,
+    "bug_type": "boundary_inclusive",
+    "buggy_line_number": 13,
+    "flawed_assumption": "A boundary threshold is strictly greater/less when it should include the boundary value (or vice versa)",
+    "passing_tests": [
+      {
+        "input": [
+          [
+            10,
+            20,
+            30
+          ],
+          15
+        ],
+        "expected": [
+          20,
+          30
+        ]
+      },
+      {
+        "input": [
+          [
+            1.5,
+            -2.3,
+            0.0,
+            5.5
+          ],
+          1.0
+        ],
+        "expected": [
+          1.5,
+          5.5
+        ]
+      },
+      {
+        "input": [
+          [
+            "abc",
+            5,
+            12,
+            3
+          ],
+          10
+        ],
+        "expected": [
+          12
+        ]
+      }
+    ],
+    "edge_case_test": {
+      "input": [
+        [
+          5,
+          10,
+          15
+        ],
+        10
+      ],
+      "expected": [
+        10,
+        15
+      ]
+    },
+    "correct_line": "        if item >= threshold:"
+  },
+  {
+    "id": "ch_int_division_44fc6a",
+    "task_description": "Calculates the percentage of scores that are greater than or equal to the threshold, rounded to 2 decimal places. Returns 0.0 if the input list is empty or invalid.",
+    "function_name": "calculate_pass_percentage",
+    "code": "def calculate_pass_percentage(scores, threshold):\n    if not isinstance(scores, list):\n        return 0.0\n        \n    total_items = len(scores)\n    if total_items == 0:\n        return 0.0\n        \n    passed_count = 0\n    for score in scores:\n        if score >= threshold:\n            passed_count += 1\n            \n    percentage = (passed_count * 100) // total_items\n    return round(float(percentage), 2)",
+    "num_lines": 15,
+    "bug_type": "int_division",
+    "buggy_line_number": 14,
+    "flawed_assumption": "Integer division (//) preserves precision or truncation before rounding yields expected results",
+    "passing_tests": [
+      {
+        "input": [
+          [
+            10,
+            20,
+            30,
+            40
+          ],
+          25
+        ],
+        "expected": 50.0
+      },
+      {
+        "input": [
+          [
+            80,
+            90,
+            100
+          ],
+          80
+        ],
+        "expected": 100.0
+      },
+      {
+        "input": [
+          [
+            50,
+            50,
+            50,
+            50,
+            50
+          ],
+          60
+        ],
+        "expected": 0.0
+      }
+    ],
+    "edge_case_test": {
+      "input": [
+        [
+          70,
+          80,
+          90
+        ],
+        80
+      ],
+      "expected": 66.67
+    },
+    "correct_line": "    percentage = (passed_count * 100) / total_items"
+  }
+]

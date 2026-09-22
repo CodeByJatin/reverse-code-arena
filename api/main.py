@@ -2,6 +2,7 @@ from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
+import json
 
 from schemas import Challenge, PublicChallenge, Attempt, Result, DetectionResult, ComprehensionResult, TestCase
 
@@ -72,47 +73,40 @@ def get_challenge(difficulty: str = Query("easy"), fresh: bool = Query(False)):
     return STUB_CHALLENGE.to_public()
 
 
+from engine.grade import grade_attempt
+ATTEMPTS_LOG_PATH = "data/attempts.json"
+
 @app.post("/api/submit", response_model=Result)
 def submit_attempt(attempt: Attempt):
     """
-    Evaluates student submission.
-    Applies Feature 3 (Anti-Leakage Guard): ensures no answer leakage occurs.
+    Evaluates student submission using the Dual-Axis grading engine.
+    Logs each attempt to data/attempts.json.
     """
-    # Find matching challenge
     seeded = _load_seeded_challenges()
     challenge = next((c for c in seeded if c.id == attempt.challenge_id), STUB_CHALLENGE)
 
-    is_correct_line = (attempt.selected_line == challenge.buggy_line_number)
-    near_miss = (abs(attempt.selected_line - challenge.buggy_line_number) == 1)
+    result = grade_attempt(attempt, challenge)
 
-    feedback_text = (
-        "Great job! You identified the exact line and corrected the flawed assumption."
-        if is_correct_line
-        else "Your selected line or explanation does not address the edge case failure. Trace how variables change on the edge case."
-    )
+    # Persist attempt to data/attempts.json
+    try:
+        attempts = []
+        if os.path.exists(ATTEMPTS_LOG_PATH) and os.path.getsize(ATTEMPTS_LOG_PATH) > 0:
+            with open(ATTEMPTS_LOG_PATH, "r", encoding="utf-8") as f:
+                attempts = json.load(f)
+        attempts.append({
+            "challenge_id": attempt.challenge_id,
+            "selected_line": attempt.selected_line,
+            "expected_behavior": attempt.expected_behavior,
+            "observed_flaw": attempt.observed_flaw,
+            "explanation": attempt.explanation,
+            "result": result.model_dump(),
+        })
+        with open(ATTEMPTS_LOG_PATH, "w", encoding="utf-8") as f:
+            json.dump(attempts, f, indent=2)
+    except Exception as e:
+        print(f"[api.main] Warning: could not log attempt: {e}")
 
-    # Feature 3: Guard against accidental answer leakage
-    leak_check = check_answer_leakage(feedback_text, challenge)
-    if leak_check["is_leaked"]:
-        feedback_text = "Analysis complete. Review the function logic against the failing edge case."
-
-    score = 3 if is_correct_line else (1 if near_miss else 0)
-    verdict = "found_and_understood" if is_correct_line else "neither"
-
-    return Result(
-        detection=DetectionResult(
-            line_correct=is_correct_line,
-            near_miss=near_miss,
-            fix_passes=is_correct_line,
-        ),
-        comprehension=ComprehensionResult(
-            score=score,
-            feedback=feedback_text,
-            reason="Pedagogical evaluation verified without answer disclosure.",
-            leak_check="Passed: No answer leakage detected.",
-        ),
-        verdict=verdict,
-    )
+    return result
 
 
 @app.get("/api/stats")
@@ -125,6 +119,24 @@ def get_stats():
         try:
             with open(ADVERSARIAL_AUDIT_PATH, "r", encoding="utf-8") as f:
                 audit = json.load(f)
+        except Exception:
+            pass
+
+    attempts_summary = {
+        "total": 0,
+        "found_and_understood": 0,
+        "found_not_understood": 0,
+        "not_found_but_understood": 0,
+        "neither": 0,
+    }
+    if os.path.exists(ATTEMPTS_LOG_PATH) and os.path.getsize(ATTEMPTS_LOG_PATH) > 0:
+        try:
+            with open(ATTEMPTS_LOG_PATH, "r", encoding="utf-8") as f:
+                raw_att = json.load(f)
+                attempts_summary["total"] = len(raw_att)
+                for a in raw_att:
+                    v = a.get("result", {}).get("verdict", "neither")
+                    attempts_summary[v] = attempts_summary.get(v, 0) + 1
         except Exception:
             pass
 
@@ -141,6 +153,7 @@ def get_stats():
             "repelled_attacks": audit.get("repelled_attacks", 6),
             "total_vectors_tested": audit.get("total_attacks", 6),
         },
+        "attempts_summary": attempts_summary,
     }
 
 

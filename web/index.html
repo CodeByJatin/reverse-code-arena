@@ -87,26 +87,26 @@
           </div>
 
           <p class="placeholder-notice">
-            Select the buggy line from the code on the left. In <strong>Turn 4</strong>, this form will be fully wired with the two-tier Hypothesis-First scaffolding and real-time Pedagogical CoT evaluation.
+            Submit your hypothesis below. The dual-axis engine will grade both your fault localization and your conceptual understanding.
           </p>
 
           <div class="selected-line-banner" id="form-selected-banner">
             <span class="banner-icon">🎯</span>
             <div>
               <div class="banner-label">Selected Buggy Line</div>
-              <div class="banner-value" id="form-selected-line">None selected (click a line)</div>
+              <div class="banner-value" id="form-selected-line">None selected (click a line in code)</div>
             </div>
           </div>
 
-          <!-- Placeholder Form Controls (Disabled preview) -->
-          <form class="attempt-form" onsubmit="return false;">
-            <!-- Feature 1: Expected Behavior -->
+          <!-- Active Form Controls (Turn 4) -->
+          <form class="attempt-form" id="attempt-form" onsubmit="return false;">
+            <!-- Feature 1: Expected Behavior (Zhang Ch. 3) -->
             <div class="form-group">
               <label for="input-expected">
                 <span class="form-label-title">1. Expected Behavior (Zhang Ch. 3)</span>
                 <span class="form-label-desc">What should this line/section have done?</span>
               </label>
-              <textarea id="input-expected" rows="2" placeholder="e.g., The loop should iterate over all indices up to len(numbers) - 1..." disabled></textarea>
+              <textarea id="input-expected" rows="2" placeholder="e.g., The loop should iterate over all indices up to len(numbers) - 1..."></textarea>
             </div>
 
             <!-- Feature 1: Observed Flaw -->
@@ -115,7 +115,7 @@
                 <span class="form-label-title">2. Observed Flaw</span>
                 <span class="form-label-desc">What did it actually do that caused the edge case to fail?</span>
               </label>
-              <textarea id="input-observed" rows="2" placeholder="e.g., range(len - 1) excludes the last element index..." disabled></textarea>
+              <textarea id="input-observed" rows="2" placeholder="e.g., range(len - 1) excludes the last element index..."></textarea>
             </div>
 
             <!-- Flawed Mental Model Explanation -->
@@ -124,7 +124,7 @@
                 <span class="form-label-title">3. Underlying Flawed Mental Model</span>
                 <span class="form-label-desc">Explain the false assumption the author made</span>
               </label>
-              <textarea id="input-explanation" rows="2" placeholder="e.g., The author assumed range(n) is inclusive of the upper bound..." disabled></textarea>
+              <textarea id="input-explanation" rows="2" placeholder="e.g., The author assumed range(n) is inclusive of the upper bound..."></textarea>
             </div>
 
             <!-- Replacement Code Line -->
@@ -133,17 +133,67 @@
                 <span class="form-label-title">4. Replacement Code Line</span>
                 <span class="form-label-desc">Single-line corrected code</span>
               </label>
-              <input type="text" id="input-fix" class="code-input" placeholder="e.g., for i in range(len(numbers)):" disabled />
+              <input type="text" id="input-fix" class="code-input" placeholder="e.g., for i in range(len(numbers)):" />
             </div>
 
-            <!-- Submit Button Placeholder -->
-            <button class="btn btn-primary btn-submit" id="btn-submit" disabled>
-              Submit Attempt (Wired in Turn 4)
+            <!-- Submit Button -->
+            <button class="btn btn-primary btn-submit" id="btn-submit">
+              Submit & Grade Attempt
             </button>
           </form>
         </div>
       </aside>
     </main>
+
+    <!-- Feature 2: Anti-Stagnation Scaffold Alert (Zhang Ch. 3 & 4) -->
+    <div class="stagnation-toast" id="stagnation-toast" style="display: none;">
+      <div class="stagnation-header">
+        <span class="stagnation-icon">💡</span>
+        <strong>Cognitive Scaffolding Nudge (Zhang, 2026)</strong>
+        <button class="toast-close" id="toast-close">&times;</button>
+      </div>
+      <p id="stagnation-msg">
+        You have been reviewing for a while. Try tracing the input from the entry point with one of the passing test inputs rather than scanning the entire file repeatedly.
+      </p>
+    </div>
+
+    <!-- Dual-Axis Results Modal -->
+    <div class="modal-backdrop" id="result-modal" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <span class="card-tag">Evaluation Complete</span>
+          <h2 class="modal-title" id="verdict-title">Result Verdict</h2>
+        </div>
+
+        <!-- Dual-Axis Badges -->
+        <div class="verdict-badges-row">
+          <div class="verdict-badge" id="badge-detection">
+            <span class="badge-subtitle">Axis 1: Detection</span>
+            <span class="badge-main-text" id="detection-text">Line Check</span>
+          </div>
+          <div class="verdict-badge" id="badge-comprehension">
+            <span class="badge-subtitle">Axis 2: Comprehension</span>
+            <span class="badge-main-text" id="comprehension-text">Score 0/3</span>
+          </div>
+        </div>
+
+        <div class="verdict-banner" id="verdict-banner">
+          <div class="verdict-status-label" id="verdict-tag">Found & Understood</div>
+          <p class="verdict-explanation" id="verdict-desc">Evaluation summary</p>
+        </div>
+
+        <!-- Feedback Card -->
+        <div class="feedback-card">
+          <div class="feedback-label">Pedagogical Feedback (Zhao et al. Anti-Leakage CoT):</div>
+          <p class="feedback-body" id="modal-feedback">Feedback text...</p>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-primary" id="btn-next-challenge">Next Challenge ➔</button>
+          <button class="btn btn-secondary" id="btn-close-modal">Review Code</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Footer -->
     <footer class="app-footer">
