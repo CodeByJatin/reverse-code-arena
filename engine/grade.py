@@ -53,19 +53,16 @@ Evaluation Rubric (Score 0 to 3):
 - 1: Surface or Vague. Vaguely in the right area, or selected the right line for a flawed/coincidental reason.
 - 0: Wrong or Empty. Missed the bug entirely, incorrect explanation, or unrelated reasoning.
 
-CRITICAL PEDAGOGICAL & ACTIONABILITY INSTRUCTION (Zhao et al., 2026; Zhang, 2026):
-- NEVER give vague generic platitudes (e.g. "Review your code", "Try again", "Keep reading").
-- Provide sharp, concrete socratic diagnostic guidance: point out the specific conceptual angle or suggest a concrete input to trace (e.g. "Trace the function with a single-element list or inspect whether the loop reaches the final index"), while strictly keeping the exact correct line of code and the exact buggy line number concealed.
-- First produce a hidden 'reason' field planning your pedagogical evaluation.
-- Then produce a 'leak_check' confirming no answer disclosure.
-- Finally produce 'feedback' for the student: 2-3 sentences of sharp, insightful diagnostic guidance that directs their focus to the exact boundary or false mental rule they missed.
+CRITICAL PEDAGOGICAL INSTRUCTION (Zhao et al., 2026; Zhang, 2026):
+- Strictly keep the exact correct line of code and exact buggy line number concealed.
+- Keep feedback concise: 1-2 sentences of sharp, actionable diagnostic guidance directing focus to the boundary or false mental rule.
 
-Return ONLY a strict JSON object with this schema:
+Return ONLY a strict JSON object:
 {{
-  "reason": "Internal pedagogical evaluation analysis",
-  "leak_check": "Confirmed no correct line or line number disclosed",
+  "reason": "Brief internal evaluation analysis",
+  "leak_check": "Confirmed no answer disclosure",
   "score": 2,
-  "feedback": "Sharp, insightful diagnostic guidance for the student"
+  "feedback": "1-2 sentences of sharp diagnostic guidance"
 }}
 """
 

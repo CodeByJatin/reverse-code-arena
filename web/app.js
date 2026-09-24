@@ -258,16 +258,26 @@ function initWorkbench() {
     });
   }
 
-  // 10. Stagnation Toast Close
+  // 10. Stagnation Toast Close (Fix 3: animated slide-down)
   const toastClose = document.getElementById('toast-close');
   if (toastClose) {
     toastClose.addEventListener('click', () => {
-      document.getElementById('stagnation-toast').style.display = 'none';
+      hideStagnationNudge();
     });
   }
 
-  // 11. Keyboard Shortcuts (Ctrl+Enter / Cmd+Enter to submit, Esc to close modals)
+  // 11. Keyboard Shortcuts (Enter on briefing modal, Ctrl+Enter / Cmd+Enter to submit, Esc to close modals)
   document.addEventListener('keydown', (e) => {
+    // Fix 11: Press Enter to start code review if briefing modal is displayed
+    const briefingModal = document.getElementById('briefing-modal');
+    if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+      if (briefingModal && briefingModal.style.display !== 'none' && !briefingModal.classList.contains('hidden')) {
+        e.preventDefault();
+        startReviewSession();
+        return;
+      }
+    }
+
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       if (isSessionActive && !isPaused && selected_line) {
         e.preventDefault();
@@ -280,15 +290,11 @@ function initWorkbench() {
     }
   });
 
-  // Auto-skip briefing on repeat visits
-  if (localStorage.getItem('rca_briefing_seen') === 'true') {
-    const briefingModal = document.getElementById('briefing-modal');
-    if (briefingModal) briefingModal.style.display = 'none';
-    isSessionActive = true;
-    challengeStartTime = Date.now();
-    if (stagnationTimer) clearInterval(stagnationTimer);
-    stagnationTimer = setInterval(checkStagnation, 5000);
-  }
+  // Clear any legacy auto-skip flag so briefing is always presented on entry
+  localStorage.removeItem('rca_briefing_seen');
+
+  // Initialize interactive 2-pane draggable resizer (Antigravity-style)
+  initPaneResizer();
 
   // Preload initial challenge data in background
   fetchChallenge(false);
@@ -461,8 +467,6 @@ function startReviewSession() {
   const briefingModal = document.getElementById('briefing-modal');
   if (briefingModal) briefingModal.style.display = 'none';
 
-  localStorage.setItem('rca_briefing_seen', 'true');
-
   isSessionActive = true;
   isPaused = false;
   challengeStartTime = Date.now();
@@ -512,6 +516,7 @@ async function fetchChallenge(startTimer = true) {
   // Reset state
   selected_line = null;
   lineClickCount = 0;
+  currentChallengeHintLevel = 1;
   updateSelectedLineUI(null);
   resetForm();
   hideStagnationNudge();
@@ -767,8 +772,61 @@ function resetForm() {
 }
 
 /**
- * Feature 2: Anti-Stagnation Scaffold (Zhang Ch. 3 & 4)
+ * Feature 2: Anti-Stagnation Scaffold with 3-Stage Escalating Hints (Zhang Ch. 3 & 4)
  */
+let currentChallengeHintLevel = 1;
+
+const HINT_TIERS = {
+  off_by_one: [
+    (input) => `<strong>Hint Level 1 (Mental Tracing):</strong> Start at the function entry point with input <code>${escapeHtml(input)}</code>. Trace your loop variables: what is the initial index, and what is the exact final index visited?`,
+    () => `<strong>Hint Level 2 (Loop Bounds):</strong> Look closely at the loop definition. Does <code>range(len(items))</code> or <code>range(len(items) - 1)</code> terminate one iteration too early or too late?`,
+    () => `<strong>Hint Level 3 (Pinpointed Clue):</strong> The bug is in the loop boundary. In Python, <code>range(n)</code> already stops at <code>n-1</code>. If you subtract 1 from length, the final element will never be processed!`
+  ],
+  boundary_inclusive: [
+    (input) => `<strong>Hint Level 1 (Mental Tracing):</strong> Trace the conditional branch with threshold input <code>${escapeHtml(input)}</code>. What happens when the value is exactly equal to the boundary?`,
+    () => `<strong>Hint Level 2 (Comparison Operators):</strong> Examine the comparison operators (<code>&gt;</code> vs <code>&gt;=</code> or <code>&lt;</code> vs <code>&lt;=</code>). Does the problem specification require including the boundary?`,
+    () => `<strong>Hint Level 3 (Pinpointed Clue):</strong> Check the line with the condition. The specification requires including threshold values, but the operator is strictly exclusive (e.g. <code>&gt;</code> instead of <code>&gt;=</code>).`
+  ],
+  int_division: [
+    (input) => `<strong>Hint Level 1 (Mental Tracing):</strong> Trace arithmetic with input <code>${escapeHtml(input)}</code>. Check whether division retains fractional digits or truncates them.`,
+    () => `<strong>Hint Level 2 (Division Operator):</strong> Check whether integer floor division (<code>//</code>) is used where true floating-point division (<code>/</code>) is required, or vice versa.`,
+    () => `<strong>Hint Level 3 (Pinpointed Clue):</strong> Python's <code>//</code> discards decimal remainder digits. Verify if this formula requires exact floating-point division <code>/</code>.`
+  ],
+  mutable_default: [
+    (input) => `<strong>Hint Level 1 (Mental Tracing):</strong> Trace what happens across multiple calls with input <code>${escapeHtml(input)}</code>. Does state bleed across separate invocations?`,
+    () => `<strong>Hint Level 2 (Function Signature):</strong> Look at the parameter list in <code>def ...</code>. Are any default arguments initialized to mutable structures like <code>[]</code> or <code>{}</code>?`,
+    () => `<strong>Hint Level 3 (Pinpointed Clue):</strong> In Python, default arguments are evaluated once at function definition time. Replace the mutable default parameter with <code>None</code> and initialize inside the body.`
+  ],
+  shallow_copy: [
+    (input) => `<strong>Hint Level 1 (Mental Tracing):</strong> Follow how nested data structures are duplicated or modified using input <code>${escapeHtml(input)}</code>.`,
+    () => `<strong>Hint Level 2 (Copy Semantics):</strong> Modifying an inner list or dictionary after a shallow copy or slice <code>[:]</code> mutates both objects.`,
+    () => `<strong>Hint Level 3 (Pinpointed Clue):</strong> Use <code>copy.deepcopy()</code> or recursive construction so mutations to nested lists or dictionaries don't mutate the original source.`
+  ]
+};
+
+function getHintForCurrentChallenge() {
+  if (!currentChallenge) return '';
+  const bugType = currentChallenge.bug_type || 'generic';
+  const firstTest = currentChallenge.passing_tests && currentChallenge.passing_tests[0]
+    ? JSON.stringify(currentChallenge.passing_tests[0].input)
+    : 'sample input';
+
+  const tierList = HINT_TIERS[bugType];
+  const levelIndex = Math.min(currentChallengeHintLevel, 3) - 1;
+
+  if (tierList && tierList[levelIndex]) {
+    return tierList[levelIndex](firstTest);
+  }
+
+  if (levelIndex === 0) {
+    return `<strong>Hint Level 1 (Mental Tracing):</strong> Anchor at the function entry point using input <code>${escapeHtml(firstTest)}</code>. Trace variable states line-by-line to locate discrepancies.`;
+  } else if (levelIndex === 1) {
+    return `<strong>Hint Level 2 (Contract Audit):</strong> Compare the function's output with edge case requirements (empty inputs, negative numbers, boundary thresholds).`;
+  } else {
+    return `<strong>Hint Level 3 (Pinpointed Clue):</strong> Focus on the single line that controls loop boundaries or conditional branching. That is where the author made a false assumption.`;
+  }
+}
+
 function checkStagnation() {
   if (!isSessionActive || isPaused || !challengeStartTime || !currentChallenge) return;
   const elapsedSeconds = (Date.now() - challengeStartTime - totalPausedDuration) / 1000;
@@ -782,39 +840,91 @@ function showStagnationNudge() {
   const msg = document.getElementById('stagnation-msg');
   if (!toast || !msg || !currentChallenge) return;
 
-  const firstTest = currentChallenge.passing_tests && currentChallenge.passing_tests[0]
-    ? JSON.stringify(currentChallenge.passing_tests[0].input)
-    : 'sample input';
+  msg.innerHTML = getHintForCurrentChallenge();
+  // Increment hint level for subsequent triggers (up to 3)
+  currentChallengeHintLevel = Math.min(3, currentChallengeHintLevel + 1);
 
-  msg.innerHTML = `
-    <strong>Systematic Tracing Protocol (Zhang, 2026):</strong> Rather than repeatedly scanning the entire file, 
-    anchor at the function entry point using input <code>${escapeHtml(firstTest)}</code>. Trace variable states line-by-line to verify your hypothesis.
-  `;
+  toast.classList.remove('closing');
   toast.style.display = 'block';
 }
 
 function hideStagnationNudge() {
   const toast = document.getElementById('stagnation-toast');
-  if (toast) toast.style.display = 'none';
+  if (toast && toast.style.display !== 'none' && !toast.classList.contains('closing')) {
+    toast.classList.add('closing');
+    setTimeout(() => {
+      toast.style.display = 'none';
+      toast.classList.remove('closing');
+    }, 280);
+  }
 }
 
 /**
- * Handle student attempt submission
+ * Handle student attempt submission with inline validation & optimistic progress
  */
 async function handleAttemptSubmit() {
+  // Clear any existing inline validation errors
+  document.querySelectorAll('.field-invalid').forEach(el => el.classList.remove('field-invalid'));
+  document.querySelectorAll('.field-error-text').forEach(el => el.remove());
+
   if (!selected_line) {
+    const indicator = document.getElementById('selected-indicator');
+    if (indicator) {
+      indicator.classList.add('field-invalid');
+      setTimeout(() => indicator.classList.remove('field-invalid'), 1200);
+    }
     showToast('Please click on a code line in the inspector to select the fault location.', 'warning');
     return;
   }
 
-  const expInput = document.getElementById('input-expected').value.trim();
-  const obsInput = document.getElementById('input-observed').value.trim();
-  const explInput = document.getElementById('input-explanation').value.trim();
-  const fixInput = document.getElementById('input-fix').value.trim();
+  const expEl = document.getElementById('input-expected');
+  const obsEl = document.getElementById('input-observed');
+  const explEl = document.getElementById('input-explanation');
+  const fixEl = document.getElementById('input-fix');
+
+  const expInput = expEl ? expEl.value.trim() : '';
+  const obsInput = obsEl ? obsEl.value.trim() : '';
+  const explInput = explEl ? explEl.value.trim() : '';
+  const fixInput = fixEl ? fixEl.value.trim() : '';
   const submitBtn = document.getElementById('btn-submit');
 
-  if (!explInput && !expInput && !obsInput) {
-    showToast('Please enter your analysis or hypothesis before submitting.', 'warning');
+  function markInvalid(inputEl, message) {
+    if (!inputEl) return;
+    inputEl.classList.add('field-invalid');
+    const errText = document.createElement('div');
+    errText.className = 'field-error-text';
+    errText.textContent = `⚠️ ${message}`;
+    inputEl.parentNode.appendChild(errText);
+
+    const onInput = () => {
+      inputEl.classList.remove('field-invalid');
+      errText.remove();
+      inputEl.removeEventListener('input', onInput);
+    };
+    inputEl.addEventListener('input', onInput);
+  }
+
+  let hasError = false;
+  if (!expInput) {
+    markInvalid(expEl, 'Please describe what this line should do');
+    hasError = true;
+  }
+  if (!obsInput) {
+    markInvalid(obsEl, 'Please describe what actually happens wrong at runtime');
+    hasError = true;
+  }
+  if (!explInput) {
+    markInvalid(explEl, "Please describe the author's flawed assumption");
+    hasError = true;
+  }
+  if (!fixInput) {
+    markInvalid(fixEl, 'Please enter your 1-line corrected code');
+    hasError = true;
+  }
+
+  if (hasError) {
+    const firstInvalid = document.querySelector('.field-invalid');
+    if (firstInvalid) firstInvalid.focus();
     return;
   }
 
@@ -839,7 +949,19 @@ async function handleAttemptSubmit() {
   };
 
   submitBtn.disabled = true;
-  submitBtn.textContent = 'Evaluating with Dual-Axis Engine...';
+  submitBtn.innerHTML = '<span class="spinner" style="width:12px;height:12px;display:inline-block;margin-right:6px;vertical-align:middle;"></span> ⚡ Running sandboxed unit tests...';
+
+  const t1 = setTimeout(() => {
+    if (submitBtn.disabled) {
+      submitBtn.innerHTML = '<span class="spinner" style="width:12px;height:12px;display:inline-block;margin-right:6px;vertical-align:middle;"></span> 🧠 Analyzing conceptual understanding...';
+    }
+  }, 1600);
+
+  const t2 = setTimeout(() => {
+    if (submitBtn.disabled) {
+      submitBtn.innerHTML = '<span class="spinner" style="width:12px;height:12px;display:inline-block;margin-right:6px;vertical-align:middle;"></span> ✨ Computing dual-axis score...';
+    }
+  }, 3500);
 
   try {
     const response = await fetch(`${API_BASE}/api/submit`, {
@@ -859,6 +981,8 @@ async function handleAttemptSubmit() {
     console.error('Submission failed:', err);
     showToast(`Submission error: ${err.message}`, 'error');
   } finally {
+    clearTimeout(t1);
+    clearTimeout(t2);
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submit Analysis & Verify Fix';
   }
@@ -1294,4 +1418,63 @@ function downloadMemoryFile() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+/**
+ * Interactive 2-Pane Splitter Resizer (Antigravity-style draggable divider)
+ */
+function initPaneResizer() {
+  const resizer = document.getElementById('pane-resizer');
+  const leftPane = document.getElementById('pane-left');
+  const workspace = document.getElementById('workspace-main');
+  if (!resizer || !leftPane || !workspace) return;
+
+  let isDragging = false;
+
+  // Restore saved width from localStorage if available
+  const savedWidth = localStorage.getItem('rca_left_pane_pct');
+  if (savedWidth) {
+    const val = parseFloat(savedWidth);
+    if (!isNaN(val) && val >= 20 && val <= 70) {
+      leftPane.style.width = `${val}%`;
+    }
+  }
+
+  resizer.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    resizer.classList.add('is-dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const rect = workspace.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
+    const totalWidth = rect.width;
+    let pct = (offsetX / totalWidth) * 100;
+
+    // Minimum 260px for left pane, minimum 340px for right pane
+    const minLeftPct = (260 / totalWidth) * 100;
+    const maxLeftPct = ((totalWidth - 340) / totalWidth) * 100;
+
+    pct = Math.max(minLeftPct, Math.min(maxLeftPct, pct));
+    pct = Math.max(18, Math.min(72, pct));
+
+    leftPane.style.width = `${pct}%`;
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isDragging) {
+      isDragging = false;
+      resizer.classList.remove('is-dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      if (leftPane.style.width) {
+        localStorage.setItem('rca_left_pane_pct', leftPane.style.width.replace('%', ''));
+      }
+    }
+  });
+}
+
 

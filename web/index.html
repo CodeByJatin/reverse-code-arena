@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=2.1" />
 </head>
 <body>
   <div class="workbench">
@@ -112,9 +112,9 @@
     </header>
 
     <!-- Main Workspace (2-Column IDE Split) -->
-    <main class="workspace-main">
+    <main class="workspace-main" id="workspace-main">
       <!-- Left Pane: Tabbed Problem Spec, Unit Tests & Strategy Guide (38% width) -->
-      <aside class="pane pane-left">
+      <aside class="pane pane-left" id="pane-left">
         <!-- Tab Navigation Bar -->
         <nav class="tab-nav" role="tablist">
           <button class="tab-btn active" data-tab="tab-spec" role="tab" id="tab-btn-spec" aria-selected="true" data-tooltip="Formal contract & problem description">
@@ -165,9 +165,9 @@
           <div class="tab-pane" id="tab-tests" role="tabpanel">
             <div class="test-table-container">
               <div style="padding: 0.85rem 1rem 0.5rem 1rem;">
-                <span class="section-label" data-tooltip="Baseline test suite validated against correct implementation">Passing Unit Tests</span>
+                <span class="section-label" data-tooltip="Baseline test suite validated against correct implementation">Passing Baseline Tests</span>
                 <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem;">
-                  The candidate code passes each baseline test below, but fails on an unhandled edge case:
+                  ℹ️ <strong>Why all PASS?</strong> The buggy code passes these 3 basic inputs. Your job is to find the hidden edge case where it breaks.
                 </p>
               </div>
               <table class="test-table">
@@ -216,8 +216,13 @@
         </div>
       </aside>
 
+      <!-- Draggable Splitter Handle (Resize Windows) -->
+      <div class="pane-resizer" id="pane-resizer" title="Drag to resize panes" role="separator" aria-orientation="vertical">
+        <div class="resizer-handle"></div>
+      </div>
+
       <!-- Right Pane: Code Inspector & Diagnostic Console (62% width) -->
-      <section class="pane pane-right">
+      <section class="pane pane-right" id="pane-right">
         <!-- Upper Section: Code Inspector Editor -->
         <div class="code-inspector-panel">
           <div class="editor-header">
@@ -241,8 +246,8 @@
         <!-- Lower Section: Fault Diagnosis & Fix Console (Bottom Dock) -->
         <div class="diagnosis-console">
           <div class="console-header">
-            <div class="console-title" data-tooltip="Structured diagnostic inputs based on Zhang (2026) hypothesis-first schema">
-              Fault Diagnosis & Fix Console
+            <div class="console-title" data-tooltip="Structured diagnostic inputs based on Zhang (2026) hypothesis-first schema" data-tooltip-pos="bottom">
+              Your Diagnosis &amp; Fix
             </div>
             <div class="console-selected-line" id="console-selected-banner">
               Target: <span class="highlight-line-val" id="form-selected-line">No line selected</span>
@@ -269,18 +274,18 @@
               <div class="console-col">
                 <div class="field-group">
                   <label for="input-expected">
-                    <span class="field-title" data-tooltip="What the author intended this statement to compute">1. Expected Behavior</span>
-                    <span class="field-desc">Intended operation for this statement</span>
+                    <span class="field-title" data-tooltip="What the author intended this statement to compute" data-tooltip-pos="bottom">1. What should this line do?</span>
+                    <span class="field-desc">The intended behavior for this statement</span>
                   </label>
-                  <input type="text" id="input-expected" class="text-input" placeholder="e.g. Iterate through all list items including the last one" />
+                  <input type="text" id="input-expected" class="text-input" placeholder="e.g. Loop through every item in the list" />
                 </div>
 
                 <div class="field-group">
                   <label for="input-observed">
-                    <span class="field-title" data-tooltip="Runtime failure mode or boundary edge-case triggered by this line">2. Observed Flaw</span>
-                    <span class="field-desc">Actual boundary failure at runtime</span>
+                    <span class="field-title" data-tooltip="Runtime failure mode or boundary edge-case triggered by this line" data-tooltip-pos="bottom">2. What does it actually do wrong?</span>
+                    <span class="field-desc">The actual mistake or boundary failure</span>
                   </label>
-                  <input type="text" id="input-observed" class="text-input" placeholder="e.g. range(len - 1) terminates 1 element too early" />
+                  <input type="text" id="input-observed" class="text-input" placeholder="e.g. It stops one item too early" />
                 </div>
               </div>
 
@@ -288,18 +293,18 @@
               <div class="console-col">
                 <div class="field-group">
                   <label for="input-explanation">
-                    <span class="field-title" data-tooltip="The cognitive misconception or false rule assumed by the author">3. Flawed Assumption</span>
-                    <span class="field-desc">Author's misconception being audited</span>
+                    <span class="field-title" data-tooltip="The cognitive misconception or false rule assumed by the author" data-tooltip-pos="bottom">3. What did the programmer get wrong?</span>
+                    <span class="field-desc">The misconception or false assumption made</span>
                   </label>
-                  <input type="text" id="input-explanation" class="text-input" placeholder="e.g. Assumed range(n) is inclusive of the upper bound" />
+                  <input type="text" id="input-explanation" class="text-input" placeholder="e.g. Assumed range(n-1) covers all items" />
                 </div>
 
                 <div class="field-group">
                   <label for="input-fix">
-                    <span class="field-title" data-tooltip="Single-line replacement that will be dynamically substituted and verified">4. Replacement Line (1-Line Fix)</span>
-                    <span class="field-desc">Clean single-line code correction</span>
+                    <span class="field-title" data-tooltip="Single-line replacement that will be dynamically substituted and verified" data-tooltip-pos="bottom">4. Your fix (single corrected line)</span>
+                    <span class="field-desc">Type or paste the corrected line here</span>
                   </label>
-                  <input type="text" id="input-fix" class="code-input" placeholder="e.g. for i in range(len(numbers)):" />
+                  <input type="text" id="input-fix" class="code-input" placeholder="e.g. for i in range(len(arr)):" />
                 </div>
               </div>
             </div>

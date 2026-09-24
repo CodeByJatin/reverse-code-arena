@@ -123,6 +123,44 @@ html, body {
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
+/* --------------------------------------------------------------------------
+   Custom Scrollbar Theming (Firefox & WebKit)
+   -------------------------------------------------------------------------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.20) transparent;
+}
+
+body.theme-light * {
+  scrollbar-color: rgba(0, 0, 0, 0.22) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+body.theme-light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+body.theme-light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.30);
+}
+
 /* Visible Indian Geometric Folding Lattice Overlay in Dark Mode */
 body::before {
   content: '';
@@ -171,32 +209,47 @@ body.theme-light::before {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1.25rem;
+  padding: 0 1rem;
   flex-shrink: 0;
   z-index: 10;
+  overflow: visible;
+  gap: 0.5rem;
 }
 
-.topbar-left, .topbar-right {
+.topbar-left {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.55rem;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  flex-shrink: 0;
 }
 
 .brand-icon {
   width: 24px;
   height: 24px;
   color: var(--accent-amber);
+  flex-shrink: 0;
 }
 
 .brand-info {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
 }
 
 .brand-name {
@@ -204,18 +257,29 @@ body.theme-light::before {
   font-size: 0.95rem;
   letter-spacing: -0.01em;
   color: var(--text-main);
+  white-space: nowrap;
 }
 
 .brand-citation {
   font-size: 0.68rem;
   color: var(--text-dim);
   font-family: var(--font-mono);
+  white-space: nowrap;
 }
 
 .topbar-divider {
   width: 1px;
   height: 20px;
   background-color: var(--border-glass);
+  flex-shrink: 0;
+}
+
+.challenge-pill-group {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
 }
 
 .badge {
@@ -227,6 +291,8 @@ body.theme-light::before {
   align-items: center;
   gap: 0.35rem;
   cursor: default;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .badge-difficulty {
@@ -278,6 +344,10 @@ body.theme-light .badge-bug {
   background: transparent;
   border-color: transparent;
   color: var(--text-secondary);
+  padding: 0.32rem 0.52rem;
+  font-size: 0.76rem;
+  gap: 0.3rem;
+  white-space: nowrap;
 }
 
 .btn-tool:hover {
@@ -468,6 +538,113 @@ body.theme-light .btn-secondary:hover {
   transform: translateY(-50%) translateX(0);
 }
 
+/* All tooltips inside the topbar open downwards into the workspace */
+.topbar [data-tooltip]::after {
+  bottom: auto;
+  top: calc(100% + 8px);
+  transform: translateX(-50%) translateY(-4px);
+}
+.topbar [data-tooltip]::before {
+  bottom: auto;
+  top: calc(100% + 2px);
+  border-width: 0 6px 6px 6px;
+  border-color: transparent transparent var(--border-glass-medium) transparent;
+  transform: translateX(-50%) translateY(-4px);
+}
+.topbar [data-tooltip]:hover::after,
+.topbar [data-tooltip]:hover::before {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* All tooltips inside console-header open downwards into the console dock, aligned neatly to avoid left-edge clipping */
+.console-header [data-tooltip]::after,
+.console-title[data-tooltip]::after {
+  bottom: auto;
+  top: calc(100% + 8px);
+  left: 0;
+  transform: translateY(-4px);
+}
+
+.console-header [data-tooltip]::before,
+.console-title[data-tooltip]::before {
+  bottom: auto;
+  top: calc(100% + 2px);
+  left: 24px;
+  border-width: 0 6px 6px 6px;
+  border-color: transparent transparent var(--border-glass-medium) transparent;
+  transform: translateY(-4px);
+}
+
+.console-header [data-tooltip]:hover::after,
+.console-header [data-tooltip]:hover::before,
+.console-title[data-tooltip]:hover::after,
+.console-title[data-tooltip]:hover::before {
+  transform: translateY(0);
+}
+
+/* All tooltips on diagnosis form field titles open downwards neatly aligned to avoid left clipping or hiding behind solution.py */
+.field-title {
+  display: inline-block;
+  cursor: help;
+}
+
+.field-title[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: auto !important;
+  top: calc(100% + 6px) !important;
+  left: 0 !important;
+  transform: translateY(-4px) !important;
+  background: var(--bg-glass-card-alt);
+  color: var(--text-main);
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.74rem;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  line-height: 1.35;
+  white-space: normal;
+  width: max-content;
+  max-width: 260px;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 9999 !important;
+  border: 1px solid var(--border-glass-medium);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  text-align: left;
+}
+
+.field-title[data-tooltip]::before {
+  content: '' !important;
+  position: absolute !important;
+  bottom: auto !important;
+  top: calc(100% + 1px) !important;
+  left: 20px !important;
+  border-width: 0 6px 6px 6px !important;
+  border-style: solid !important;
+  border-color: transparent transparent var(--border-glass-medium) transparent !important;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(-4px) !important;
+  z-index: 9999 !important;
+}
+
+.field-title[data-tooltip]:hover::after,
+.field-title[data-tooltip]:hover::before,
+label:hover .field-title[data-tooltip]::after,
+label:hover .field-title[data-tooltip]::before {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(0) !important;
+}
+
+
 
 .status-indicator {
   display: flex;
@@ -501,13 +678,90 @@ body.theme-light .btn-secondary:hover {
   overflow: hidden;
 }
 
-/* Left Pane: Tabs for Spec, Tests, and Strategy (38%) */
+/* Left Pane: Tabs for Spec, Tests, and Strategy with Translucent Background */
 .pane-left {
+  position: relative;
   width: 38%;
-  background: var(--bg-glass-base);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  border-right: 1px solid var(--border-glass);
+  min-width: 260px;
+  max-width: 72%;
+  background: rgba(12, 12, 14, 0.58);
+  backdrop-filter: blur(2px) saturate(140%);
+  -webkit-backdrop-filter: blur(2px) saturate(140%);
+  border-right: none;
+}
+
+body.theme-light .pane-left {
+  background: rgba(251, 248, 243, 0.65);
+}
+
+/* Translucent Geometric Folding Lattice Pattern on Left Pane */
+.pane-left::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cpath d='M0 32 L32 0 L64 32 L32 64 Z' fill='none' stroke='%23ffffff' stroke-opacity='0.22' stroke-width='1.2'/%3E%3Cpath d='M16 32 L32 16 L48 32 L32 48 Z' fill='none' stroke='%23ffffff' stroke-opacity='0.20' stroke-width='1'/%3E%3Cpath d='M0 0 L64 64 M64 0 L0 64' fill='none' stroke='%23ffffff' stroke-opacity='0.16' stroke-width='0.9' stroke-dasharray='4,3'/%3E%3Cpath d='M32 0 L32 64 M0 32 L64 32' fill='none' stroke='%23ffffff' stroke-opacity='0.16' stroke-width='0.9'/%3E%3Cpath d='M0 16 L16 0 M48 0 L64 16 M64 48 L48 64 M16 64 L0 48' fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='1'/%3E%3Ccircle cx='32' cy='32' r='2.5' fill='%23ffffff' fill-opacity='0.28'/%3E%3C/svg%3E");
+  background-size: 64px 64px;
+}
+
+body.theme-light .pane-left::before {
+  opacity: 0.45;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cpath d='M0 32 L32 0 L64 32 L32 64 Z' fill='none' stroke='%238c6b43' stroke-opacity='0.24' stroke-width='1.2'/%3E%3Cpath d='M16 32 L32 16 L48 32 L32 48 Z' fill='none' stroke='%238c6b43' stroke-opacity='0.22' stroke-width='1'/%3E%3Cpath d='M0 0 L64 64 M64 0 L0 64' fill='none' stroke='%238c6b43' stroke-opacity='0.18' stroke-width='0.9' stroke-dasharray='4,3'/%3E%3Cpath d='M32 0 L32 64 M0 32 L64 32' fill='none' stroke='%238c6b43' stroke-opacity='0.18' stroke-width='0.9'/%3E%3Cpath d='M0 16 L16 0 M48 0 L64 16 M64 48 L48 64 M16 64 L0 48' fill='none' stroke='%238c6b43' stroke-opacity='0.20' stroke-width='1'/%3E%3Ccircle cx='32' cy='32' r='2.5' fill='%238c6b43' fill-opacity='0.30'/%3E%3C/svg%3E");
+}
+
+.pane-left > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Pane Resizer Splitter Handle (Fix 2: Antigravity-style draggable divider) */
+.pane-resizer {
+  width: 6px;
+  background: var(--border-glass);
+  cursor: col-resize;
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background 0.15s ease;
+}
+
+.pane-resizer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -4px;
+  right: -4px;
+  z-index: 2;
+}
+
+.pane-resizer:hover,
+.pane-resizer.is-dragging {
+  background: var(--accent-amber);
+}
+
+.resizer-handle {
+  width: 2px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+body.theme-light .resizer-handle {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.pane-resizer:hover .resizer-handle,
+.pane-resizer.is-dragging .resizer-handle {
+  background: #ffffff;
 }
 
 /* Tab Navigation Header */
@@ -577,14 +831,20 @@ body.theme-light .tab-btn.active {
 
 /* Tab 1: Spec Content */
 .spec-box {
-  background: var(--bg-glass-card);
-  border: 1px solid var(--border-glass);
+  background: rgba(22, 22, 26, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border-glass-medium);
   border-radius: var(--radius-md);
   padding: 1rem 1.15rem;
   box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+body.theme-light .spec-box {
+  background: rgba(255, 255, 255, 0.65);
 }
 
 .spec-header {
@@ -631,11 +891,17 @@ body.theme-light .function-sig {
 
 /* Tab 2: Tests Table */
 .test-table-container {
-  background: var(--bg-glass-card);
-  border: 1px solid var(--border-glass);
+  background: rgba(22, 22, 26, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border-glass-medium);
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--shadow-card);
+}
+
+body.theme-light .test-table-container {
+  background: rgba(255, 255, 255, 0.65);
 }
 
 .test-table {
@@ -675,13 +941,19 @@ body.theme-light .function-sig {
 
 /* Tab 3: Strategy Guide */
 .strategy-card {
-  background: var(--bg-glass-card);
-  border: 1px solid var(--border-glass);
+  background: rgba(22, 22, 26, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border-glass-medium);
   border-radius: var(--radius-md);
   padding: 1.15rem;
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+}
+
+body.theme-light .strategy-card {
+  background: rgba(255, 255, 255, 0.65);
 }
 
 .strategy-steps {
@@ -702,10 +974,13 @@ body.theme-light .function-sig {
    Right Pane: Code Inspector & Diagnostic Console (62%)
    -------------------------------------------------------------------------- */
 .pane-right {
-  width: 62%;
+  flex: 1;
+  min-width: 340px;
+  width: auto;
   display: flex;
   flex-direction: column;
   background: transparent;
+  overflow: hidden;
 }
 
 /* Upper Section: Code Inspector */
@@ -903,6 +1178,9 @@ body.theme-light .code-row.revealed-bug .code-line-content {
 
 /* Lower Section: Diagnosis Console */
 .diagnosis-console {
+  position: relative;
+  z-index: 20;
+  overflow: visible;
   background: var(--bg-glass-card);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
@@ -915,6 +1193,9 @@ body.theme-light .code-row.revealed-bug .code-line-content {
 }
 
 .console-header {
+  position: relative;
+  z-index: 25;
+  overflow: visible;
   height: 38px;
   background: var(--bg-glass-gutter);
   border-bottom: 1px solid var(--border-glass);
@@ -926,11 +1207,14 @@ body.theme-light .code-row.revealed-bug .code-line-content {
 }
 
 .console-title {
+  position: relative;
+  z-index: 30;
   font-size: 0.78rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-main);
+  cursor: help;
 }
 
 .console-selected-line {
@@ -1150,47 +1434,6 @@ body.theme-light .code-input {
   gap: 0.65rem;
 }
 
-/* --------------------------------------------------------------------------
-   Hover Tooltip Popovers (Context Without Clutter)
-   -------------------------------------------------------------------------- */
-[data-tooltip] {
-  position: relative;
-  cursor: help;
-}
-
-[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: 125%;
-  left: 50%;
-  transform: translateX(-50%) translateY(4px);
-  background: var(--bg-glass-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-glass-medium);
-  color: var(--text-main);
-  font-size: 0.74rem;
-  font-weight: 400;
-  line-height: 1.35;
-  padding: 0.45rem 0.75rem;
-  border-radius: var(--radius-sm);
-  white-space: normal;
-  width: max-content;
-  max-width: 250px;
-  text-align: center;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.15s ease, transform 0.15s ease;
-  z-index: 5000;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-}
-
-[data-tooltip]:hover::after {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(-50%) translateY(0);
-}
 
 /* --------------------------------------------------------------------------
    Footer Status Bar
@@ -1287,6 +1530,25 @@ body.theme-light .modal-backdrop {
   justify-content: flex-end;
   gap: 0.75rem;
   padding-top: 0.5rem;
+}
+
+/* Result Modal Card Scrolling & Sticky Bottom Actions (Fix 1) */
+.result-card {
+  max-height: 88vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.result-card .modal-actions {
+  position: sticky;
+  bottom: 0;
+  background: var(--bg-glass-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 0.85rem 0 0.25rem 0;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--border-glass);
+  z-index: 25;
 }
 
 /* Briefing Step Cards */
@@ -1727,6 +1989,21 @@ body.theme-light .stat-number {
   animation: slideUp 0.3s ease-out;
 }
 
+@keyframes slideDownFadeOut {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(28px);
+    opacity: 0;
+  }
+}
+
+.stagnation-toast.closing {
+  animation: slideDownFadeOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
 .stagnation-header {
   display: flex;
   align-items: center;
@@ -1821,9 +2098,35 @@ body.theme-light .stagnation-toast code {
 /* Light -> Dark: Light collapses inward into button on top of dark */
 .theme-transition-to-dark::view-transition-new(root) {
   z-index: 1;
+  background-color: #000000;
+  will-change: clip-path;
 }
 .theme-transition-to-dark::view-transition-old(root) {
   z-index: 9999;
+  will-change: clip-path;
+}
+
+/* Inline Form Field Validation (Fix 9) */
+@keyframes inlineShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
+.field-invalid {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25) !important;
+  animation: inlineShake 0.35s ease-in-out;
+}
+
+.field-error-text {
+  color: #ef4444;
+  font-size: 0.72rem;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 500;
 }
 
 /* ==========================================================================
@@ -2110,4 +2413,35 @@ body.theme-light .toast-error .toast-body { color: #e11d48; }
   30% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
   60% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
   100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
+}
+
+/* ==========================================================================
+   Responsive Topbar Spacing & Overlap Prevention (Issue 1)
+   ========================================================================== */
+@media (max-width: 1560px) {
+  .topbar-right .btn-tool:not(.theme-toggle-btn) span {
+    display: none;
+  }
+  .topbar-right .btn-tool:not(.theme-toggle-btn) {
+    padding: 0.35rem 0.5rem;
+  }
+  .category-dropdown {
+    max-width: 185px;
+    font-size: 0.74rem;
+  }
+  .brand-citation {
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 1320px) {
+  .brand-citation {
+    display: none;
+  }
+  #topbar-grit-badge {
+    display: none;
+  }
 }
