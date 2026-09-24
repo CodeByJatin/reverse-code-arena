@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reverse Code Arena — Research-Grounded Pedagogical Debugger</title>
+  <title>Reverse Code Arena â€” Research-Grounded Pedagogical Debugger</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -31,7 +31,7 @@
           <span class="badge badge-difficulty" id="badge-difficulty" data-tooltip="Challenge difficulty tier based on fault complexity">Easy</span>
           <span class="badge badge-bug" id="bug-type-badge" data-tooltip="Defect classification seeded in this verification challenge">Bug: Scanning...</span>
           <span class="badge badge-bug" id="topbar-grit-badge" data-tooltip="Grit Tracker: Attempts made in Grind Mode without revealing the answer">Grit: 0 Retries</span>
-          <span class="badge badge-streak" id="topbar-streak-badge" data-tooltip="Session Streak: Consecutive verified challenges solved without error">🔥 Streak: 0</span>
+          <span class="badge badge-streak" id="topbar-streak-badge" data-tooltip="Session Streak: Consecutive verified challenges solved without error">ðŸ”¥ Streak: 0</span>
         </div>
       </div>
 
@@ -39,7 +39,7 @@
         <!-- Challenge Category Selector (Adaptive / Manual) -->
         <div class="category-select-wrapper" title="Select practice mode: Adaptive or specific bug category">
           <select id="select-category" class="category-dropdown">
-            <option value="adaptive">🎯 Adaptive (Target Weakness)</option>
+            <option value="adaptive">ðŸŽ¯ Adaptive (Target Weakness)</option>
             <option value="boundary_inclusive">Boundary (>= vs >)</option>
             <option value="off_by_one">Off-By-One (Loops)</option>
             <option value="int_division">Int Division (/ vs //)</option>
@@ -165,9 +165,9 @@
           <div class="tab-pane" id="tab-tests" role="tabpanel">
             <div class="test-table-container">
               <div style="padding: 0.85rem 1rem 0.5rem 1rem;">
-                <span class="section-label" data-tooltip="Baseline test suite validated against correct implementation">Passing Unit Tests</span>
+                <span class="section-label" data-tooltip="These tests all pass on the buggy code â€” the hidden edge case is what breaks it">Passing Unit Tests</span>
                 <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem;">
-                  The candidate code passes each baseline test below, but fails on an unhandled edge case:
+                  âœ… These inputs work fine on the buggy code. The bug only appears on a special edge case not shown here â€” your job is to find it.
                 </p>
               </div>
               <table class="test-table">
@@ -241,7 +241,7 @@
         <!-- Lower Section: Fault Diagnosis & Fix Console (Bottom Dock) -->
         <div class="diagnosis-console">
           <div class="console-header">
-            <div class="console-title" data-tooltip="Structured diagnostic inputs based on Zhang (2026) hypothesis-first schema">
+            <div class="console-title" data-tooltip="Tell us which line is wrong, why it's wrong, and how to fix it">
               Fault Diagnosis & Fix Console
             </div>
             <div class="console-selected-line" id="console-selected-banner">
@@ -269,18 +269,18 @@
               <div class="console-col">
                 <div class="field-group">
                   <label for="input-expected">
-                    <span class="field-title" data-tooltip="What the author intended this statement to compute">1. Expected Behavior</span>
-                    <span class="field-desc">Intended operation for this statement</span>
+                    <span class="field-title" data-tooltip="What should this line have done?">1. What should this line do?</span>
+                    <span class="field-desc">Intended behaviour of this statement</span>
                   </label>
-                  <input type="text" id="input-expected" class="text-input" placeholder="e.g. Iterate through all list items including the last one" />
+                  <input type="text" id="input-expected" class="text-input" placeholder="e.g. The loop should visit every item including the last one" />
                 </div>
 
                 <div class="field-group">
                   <label for="input-observed">
-                    <span class="field-title" data-tooltip="Runtime failure mode or boundary edge-case triggered by this line">2. Observed Flaw</span>
-                    <span class="field-desc">Actual boundary failure at runtime</span>
+                    <span class="field-title" data-tooltip="What does it actually do wrong?">2. What does it actually do wrong?</span>
+                    <span class="field-desc">How it fails on the edge case</span>
                   </label>
-                  <input type="text" id="input-observed" class="text-input" placeholder="e.g. range(len - 1) terminates 1 element too early" />
+                  <input type="text" id="input-observed" class="text-input" placeholder="e.g. It stops one step too early and skips the last element" />
                 </div>
               </div>
 
@@ -288,16 +288,16 @@
               <div class="console-col">
                 <div class="field-group">
                   <label for="input-explanation">
-                    <span class="field-title" data-tooltip="The cognitive misconception or false rule assumed by the author">3. Flawed Assumption</span>
-                    <span class="field-desc">Author's misconception being audited</span>
+                    <span class="field-title" data-tooltip="What false belief made the author write it this way?">3. What did the author get wrong?</span>
+                    <span class="field-desc">The false belief behind the mistake</span>
                   </label>
-                  <input type="text" id="input-explanation" class="text-input" placeholder="e.g. Assumed range(n) is inclusive of the upper bound" />
+                  <input type="text" id="input-explanation" class="text-input" placeholder="e.g. Assumed range(n-1) covers all n elements" />
                 </div>
 
                 <div class="field-group">
                   <label for="input-fix">
-                    <span class="field-title" data-tooltip="Single-line replacement that will be dynamically substituted and verified">4. Replacement Line (1-Line Fix)</span>
-                    <span class="field-desc">Clean single-line code correction</span>
+                    <span class="field-title" data-tooltip="Paste a corrected version of the buggy line here">4. Your fix (paste the corrected line)</span>
+                    <span class="field-desc">Single corrected line of code</span>
                   </label>
                   <input type="text" id="input-fix" class="code-input" placeholder="e.g. for i in range(len(numbers)):" />
                 </div>
@@ -540,7 +540,7 @@
             <span class="card-tag">Student Cognitive Profile</span>
             <h2 class="modal-title">Dynamic Session Memory & Blind Spots</h2>
           </div>
-          <span class="badge badge-streak" id="modal-memory-streak">🔥 Streak: 0</span>
+          <span class="badge badge-streak" id="modal-memory-streak">ðŸ”¥ Streak: 0</span>
         </div>
       </div>
 
@@ -563,11 +563,11 @@
         <div class="memory-markdown-container">
           <div class="memory-markdown-header">
             <div style="display: flex; align-items: center; gap: 0.5rem;">
-              <span class="file-icon">📄</span>
+              <span class="file-icon">ðŸ“„</span>
               <span style="font-family: var(--font-mono); font-weight: 600; font-size: 0.82rem;">memory.md (Disk Engine Output)</span>
             </div>
             <button class="btn btn-secondary btn-sm" id="btn-download-memory" title="Download memory.md as local report">
-              📥 Export Markdown
+              ðŸ“¥ Export Markdown
             </button>
           </div>
           <pre class="memory-markdown-viewer" id="memory-markdown-text">Loading session memory...</pre>

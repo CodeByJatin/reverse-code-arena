@@ -123,6 +123,20 @@ html, body {
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
+/* Issue 5 — Scrollbar theming to match dark/light canvas */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.18);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.32); }
+body.theme-light ::-webkit-scrollbar-thumb { background: rgba(140,105,75,0.22); }
+body.theme-light ::-webkit-scrollbar-thumb:hover { background: rgba(140,105,75,0.40); }
+/* Firefox */
+* { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.18) transparent; }
+body.theme-light * { scrollbar-color: rgba(140,105,75,0.22) transparent; }
+
 /* Visible Indian Geometric Folding Lattice Overlay in Dark Mode */
 body::before {
   content: '';
@@ -1282,6 +1296,24 @@ body.theme-light .modal-backdrop {
   margin-top: 0.25rem;
 }
 
+/* Issue 1 — Result modal card scrolls internally; actions always pinned at bottom */
+.result-card {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.result-card .modal-actions {
+  position: sticky;
+  bottom: 0;
+  background: var(--bg-glass-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  padding: 0.75rem 0 0.25rem;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--border-glass);
+  z-index: 10;
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -1711,6 +1743,17 @@ body.theme-light .stat-number {
 }
 
 /* Stagnation Toast Alert */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* Issue 3 — Slide-down animation when hint is dismissed */
+@keyframes slideDown {
+  from { opacity: 1; transform: translateY(0);     }
+  to   { opacity: 0; transform: translateY(110%);  }
+}
+
 .stagnation-toast {
   position: fixed;
   bottom: 3.5rem;
@@ -1725,6 +1768,10 @@ body.theme-light .stat-number {
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(245, 158, 11, 0.15);
   z-index: 1000;
   animation: slideUp 0.3s ease-out;
+}
+
+.stagnation-toast.closing {
+  animation: slideDown 0.3s ease-in forwards;
 }
 
 .stagnation-header {
@@ -1804,6 +1851,7 @@ body.theme-light .stagnation-toast code {
   animation: none;
   mix-blend-mode: normal;
   display: block;
+  will-change: clip-path;
 }
 
 ::view-transition-group(root) {
@@ -1818,9 +1866,12 @@ body.theme-light .stagnation-toast code {
   z-index: 9999;
 }
 
-/* Light -> Dark: Light collapses inward into button on top of dark */
+/* Issue 4 — Prevent white flash at end of Light→Dark transition.
+   Force the incoming snapshot (new = dark) to show solid black background
+   so there is never a bare white frame while the clip collapses. */
 .theme-transition-to-dark::view-transition-new(root) {
   z-index: 1;
+  background-color: #000000;
 }
 .theme-transition-to-dark::view-transition-old(root) {
   z-index: 9999;
@@ -2111,3 +2162,58 @@ body.theme-light .toast-error .toast-body { color: #e11d48; }
   60% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
   100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
 }
+
+/* ==========================================================================
+   Issue 2 — Topbar badge tooltips open DOWNWARD so they're not clipped
+   ========================================================================== */
+.challenge-pill-group [data-tooltip]::after {
+  bottom: auto;
+  top: calc(100% + 8px);
+  transform: translateX(-50%) translateY(-4px);
+}
+.challenge-pill-group [data-tooltip]::before {
+  bottom: auto;
+  top: calc(100% + 2px);
+  border-width: 0 6px 6px 6px;
+  border-color: transparent transparent var(--border-glass-medium) transparent;
+  transform: translateX(-50%) translateY(-4px);
+}
+.challenge-pill-group [data-tooltip]:hover::after,
+.challenge-pill-group [data-tooltip]:hover::before {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Also ensure the topbar itself does not clip overflowing children */
+.topbar {
+  overflow: visible !important;
+}
+
+/* ==========================================================================
+   Issue 9 — Inline field validation (shake + red glow on empty submit)
+   ========================================================================== */
+@keyframes fieldShake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-5px); }
+  40%       { transform: translateX(5px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+}
+
+.field-error .text-input,
+.field-error .code-input {
+  border-color: var(--accent-rose) !important;
+  box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.25) !important;
+  animation: fieldShake 0.35s ease;
+}
+
+.field-error-msg {
+  font-size: 0.72rem;
+  color: var(--accent-rose);
+  margin-top: 0.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  animation: tabFadeIn 0.2s ease-out;
+}
+
+body.theme-light .field-error-msg { color: var(--accent-rose); }
