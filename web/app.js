@@ -512,7 +512,6 @@ async function fetchChallenge(startTimer = true) {
   // Reset state
   selected_line = null;
   lineClickCount = 0;
-  hintStage = 0;  // Issue 8: reset escalating hint stage for new challenge
   updateSelectedLineUI(null);
   resetForm();
   hideStagnationNudge();
@@ -778,39 +777,6 @@ function checkStagnation() {
   }
 }
 
-/* ==========================================================================
-   Issue 8 — 3-Stage Escalating Hints per Bug Type
-   ========================================================================== */
-const HINT_STAGES = {
-  off_by_one: [
-    null, // Stage 1 uses the generic tracing nudge
-    "Focus on the loop's stop condition. Does your <code>range()</code> reach the last element? Try tracing with the smallest possible input — a single-item list.",
-    "The bug is on a single line controlling how many iterations run. Compare your loop boundary against the edge-case input: the iteration stops one step too early."
-  ],
-  int_division: [
-    null,
-    "Check whether you're using <code>/</code> (float) or <code>//</code> (integer floor). Trace the function with a value that does not divide evenly — what does each operator return?",
-    "The bug is a division operator choice. Verify which rounding behaviour the contract requires when the inputs don't divide cleanly."
-  ],
-  boundary_inclusive: [
-    null,
-    "Is the comparison <code>&lt;</code> or <code>&lt;=</code>? Trace the function with the value exactly at the threshold — does the condition include or exclude it?",
-    "The bug is a single comparison character. Check whether the spec says 'strictly greater than' or 'at least equal to' the boundary value."
-  ],
-  mutable_default: [
-    null,
-    "Call the function twice with the same arguments in your head. Does the second call start with a fresh accumulator, or does it remember the first call's data?",
-    "Default argument objects in Python are created once at function definition, not on every call. The bug is that the mutable default is shared across all calls."
-  ],
-  shallow_copy: [
-    null,
-    "Mutate a nested element after calling the function. Does the original structure change? Python's <code>list(x)</code> only copies the outer list's references.",
-    "The bug is that the copy only clones the outer container. Inner objects are still shared references — modifying them affects both copies."
-  ]
-};
-
-let hintStage = 0;
-
 function showStagnationNudge() {
   const toast = document.getElementById('stagnation-toast');
   const msg = document.getElementById('stagnation-msg');
@@ -820,42 +786,20 @@ function showStagnationNudge() {
     ? JSON.stringify(currentChallenge.passing_tests[0].input)
     : 'sample input';
 
-  const bugType = currentChallenge.bug_type || 'off_by_one';
-  const stages = HINT_STAGES[bugType] || HINT_STAGES['off_by_one'];
-
-  if (hintStage === 0 || !stages[hintStage]) {
-    // Stage 1: Generic G4 tracing nudge (Zhang, 2026)
-    msg.innerHTML = `
-      <strong>Systematic Tracing Protocol (Zhang, 2026):</strong> Rather than repeatedly scanning the entire file,
-      anchor at the function entry point using input <code>${escapeHtml(firstTest)}</code>. Trace variable states line-by-line to verify your hypothesis.
-    `;
-  } else {
-    // Stage 2/3: Bug-type specific escalating hint
-    msg.innerHTML = `<strong>Targeted Hint (Stage ${hintStage + 1}):</strong> ${stages[hintStage]}`;
-  }
-
-  hintStage = Math.min(hintStage + 1, stages.length - 1);
-
-  // Remove any leftover closing animation before showing
-  toast.classList.remove('closing');
+  msg.innerHTML = `
+    <strong>Systematic Tracing Protocol (Zhang, 2026):</strong> Rather than repeatedly scanning the entire file, 
+    anchor at the function entry point using input <code>${escapeHtml(firstTest)}</code>. Trace variable states line-by-line to verify your hypothesis.
+  `;
   toast.style.display = 'block';
 }
 
 function hideStagnationNudge() {
   const toast = document.getElementById('stagnation-toast');
-  if (!toast || toast.style.display === 'none') return;
-  // Issue 3: Slide-down animation before hiding
-  toast.classList.add('closing');
-  setTimeout(() => {
-    toast.style.display = 'none';
-    toast.classList.remove('closing');
-  }, 310);
+  if (toast) toast.style.display = 'none';
 }
 
 /**
  * Handle student attempt submission
- * Issue 9: inline field validation with shake
- * Issue 10: optimistic UI — instant feedback while LLM grades
  */
 async function handleAttemptSubmit() {
   if (!selected_line) {
@@ -863,56 +807,19 @@ async function handleAttemptSubmit() {
     return;
   }
 
-  const expInput   = document.getElementById('input-expected').value.trim();
-  const obsInput   = document.getElementById('input-observed').value.trim();
-  const explInput  = document.getElementById('input-explanation').value.trim();
-  const fixInput   = document.getElementById('input-fix').value.trim();
-  const submitBtn  = document.getElementById('btn-submit');
+  const expInput = document.getElementById('input-expected').value.trim();
+  const obsInput = document.getElementById('input-observed').value.trim();
+  const explInput = document.getElementById('input-explanation').value.trim();
+  const fixInput = document.getElementById('input-fix').value.trim();
+  const submitBtn = document.getElementById('btn-submit');
 
-  // Issue 9 — Inline field-level validation instead of ugly toast
-  const anyHypothesis = expInput || obsInput || explInput;
-  if (!anyHypothesis) {
-    // Shake and highlight every hypothesis field
-    const fields = [
-      { groupId: 'input-expected',     parentSelector: '#input-expected' },
-      { groupId: 'input-observed',     parentSelector: '#input-observed' },
-      { groupId: 'input-explanation',  parentSelector: '#input-explanation' },
-    ];
-    fields.forEach(({ parentSelector }) => {
-      const input = document.querySelector(parentSelector);
-      if (!input) return;
-      const group = input.closest('.field-group');
-      if (!group) return;
-      group.classList.add('field-error');
-      // Add error message if not already present
-      if (!group.querySelector('.field-error-msg')) {
-        const errMsg = document.createElement('span');
-        errMsg.className = 'field-error-msg';
-        errMsg.textContent = '⚠ Describe what you think went wrong before submitting.';
-        group.appendChild(errMsg);
-      }
-      // Remove after 3s so user can try again cleanly
-      setTimeout(() => {
-        group.classList.remove('field-error');
-        const msg = group.querySelector('.field-error-msg');
-        if (msg) msg.remove();
-      }, 3000);
-    });
-    // Scroll first empty field into view
-    const firstInput = document.querySelector('#input-expected');
-    if (firstInput) firstInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (!explInput && !expInput && !obsInput) {
+    showToast('Please enter your analysis or hypothesis before submitting.', 'warning');
     return;
   }
 
-  // Clear any lingering validation errors
-  document.querySelectorAll('.field-error').forEach(g => {
-    g.classList.remove('field-error');
-    const msg = g.querySelector('.field-error-msg');
-    if (msg) msg.remove();
-  });
-
-  // Construct full fixed code by replacing the selected line
-  let fullFixedCode = '';
+  // Construct full fixed code by replacing the selected line, preserving original line indentation
+  let fullFixedCode = "";
   if (selected_line >= 1 && fixInput) {
     const lines = (currentChallenge.code || '').split('\n');
     if (selected_line <= lines.length) {
@@ -923,20 +830,16 @@ async function handleAttemptSubmit() {
   }
 
   const payload = {
-    challenge_id:      currentChallenge.id,
-    selected_line:     selected_line,
+    challenge_id: currentChallenge.id,
+    selected_line: selected_line,
     expected_behavior: expInput,
-    observed_flaw:     obsInput,
-    explanation:       explInput || `${expInput}. ${obsInput}`,
-    fixed_code:        fullFixedCode,
+    observed_flaw: obsInput,
+    explanation: explInput || `${expInput}. ${obsInput}`,
+    fixed_code: fullFixedCode,
   };
 
-  // Issue 10 — Optimistic UI: instant state + staged messages
   submitBtn.disabled = true;
-  submitBtn.textContent = 'Checking your fix...';
-  const slowTimer = setTimeout(() => {
-    if (submitBtn.disabled) submitBtn.textContent = 'Asking tutor...';
-  }, 2000);
+  submitBtn.textContent = 'Evaluating with Dual-Axis Engine...';
 
   try {
     const response = await fetch(`${API_BASE}/api/submit`, {
@@ -956,7 +859,6 @@ async function handleAttemptSubmit() {
     console.error('Submission failed:', err);
     showToast(`Submission error: ${err.message}`, 'error');
   } finally {
-    clearTimeout(slowTimer);
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submit Analysis & Verify Fix';
   }
