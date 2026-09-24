@@ -19,6 +19,112 @@ const API_BASE = window.location.origin.includes('localhost:8000') || window.loc
   ? ''
   : 'http://localhost:8000';
 
+// ==========================================================================
+// Toast Notification System (replaces all alert() calls)
+// ==========================================================================
+function showToast(message, type = 'info', durationMs = 3500) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const icons = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌' };
+  const toast = document.createElement('div');
+  toast.className = `toast-notification toast-${type}`;
+  toast.innerHTML = `<span class="toast-icon">${icons[type] || icons.info}</span><span class="toast-body">${message}</span>`;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('toast-exit');
+    setTimeout(() => toast.remove(), 280);
+  }, durationMs);
+}
+
+// ==========================================================================
+// Confirmation Dialog (replaces confirm() for End Exercise)
+// ==========================================================================
+function showConfirm(title, message, onConfirm) {
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  overlay.innerHTML = `
+    <div class="confirm-card">
+      <h3>${title}</h3>
+      <p>${message}</p>
+      <div class="confirm-actions">
+        <button class="btn btn-secondary" id="confirm-cancel">Keep Going</button>
+        <button class="btn btn-primary" id="confirm-yes">End Exercise</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#confirm-cancel').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#confirm-yes').addEventListener('click', () => {
+    overlay.remove();
+    onConfirm();
+  });
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
+// ==========================================================================
+// Celebration Confetti (on found_and_understood verdict)
+// ==========================================================================
+function playCelebration() {
+  // Emoji burst
+  const badge = document.createElement('div');
+  badge.className = 'celebration-badge';
+  badge.textContent = '🎉';
+  document.body.appendChild(badge);
+  setTimeout(() => badge.remove(), 1300);
+
+  // Canvas confetti
+  const canvas = document.getElementById('celebration-canvas');
+  if (!canvas) return;
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const ctx = canvas.getContext('2d');
+  const particles = [];
+  const colors = ['#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#3b82f6', '#ffffff', '#fbbf24'];
+
+  for (let i = 0; i < 80; i++) {
+    particles.push({
+      x: canvas.width / 2 + (Math.random() - 0.5) * 200,
+      y: canvas.height / 2,
+      vx: (Math.random() - 0.5) * 16,
+      vy: Math.random() * -14 - 4,
+      size: Math.random() * 6 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rotation: Math.random() * 360,
+      rotationSpeed: (Math.random() - 0.5) * 12,
+      life: 1,
+    });
+  }
+
+  let frame = 0;
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = false;
+    for (const p of particles) {
+      if (p.life <= 0) continue;
+      alive = true;
+      p.x += p.vx;
+      p.vy += 0.35;
+      p.y += p.vy;
+      p.rotation += p.rotationSpeed;
+      p.life -= 0.012;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate((p.rotation * Math.PI) / 180);
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+      ctx.restore();
+    }
+    frame++;
+    if (alive && frame < 120) requestAnimationFrame(animate);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  requestAnimationFrame(animate);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initWorkbench();
 });
@@ -65,6 +171,33 @@ function initWorkbench() {
     });
   }
 
+  // 5.1. Category Selector Dropdown
+  const catSelect = document.getElementById('select-category');
+  if (catSelect) {
+    catSelect.addEventListener('change', () => {
+      const modeName = catSelect.options[catSelect.selectedIndex].text;
+      showToast(`Practice mode switched: ${modeName}`, 'info', 2500);
+      fetchChallenge(true);
+    });
+  }
+
+  // 5.2. Session Memory Modal Controls
+  const memoryBtn = document.getElementById('btn-memory');
+  if (memoryBtn) {
+    memoryBtn.addEventListener('click', openMemoryModal);
+  }
+  const closeMemoryBtn = document.getElementById('btn-close-memory');
+  if (closeMemoryBtn) {
+    closeMemoryBtn.addEventListener('click', closeMemoryModal);
+  }
+  const downloadMemBtn = document.getElementById('btn-download-memory');
+  if (downloadMemBtn) {
+    downloadMemBtn.addEventListener('click', downloadMemoryFile);
+  }
+
+  // Initial fetch of session memory stats
+  refreshMemoryState();
+
   // 6. Platform Stats Modal
   const statsBtn = document.getElementById('btn-stats');
   if (statsBtn) {
@@ -83,6 +216,12 @@ function initWorkbench() {
   const resetBtn = document.getElementById('btn-reset-form');
   if (resetBtn) {
     resetBtn.addEventListener('click', resetForm);
+  }
+  const fixInputEl = document.getElementById('input-fix');
+  if (fixInputEl) {
+    fixInputEl.addEventListener('input', () => {
+      fixInputEl.dataset.autoPrefilled = 'false';
+    });
   }
 
   // 8. Result Modal Actions
@@ -111,9 +250,11 @@ function initWorkbench() {
   if (topbarRevealBtn) {
     topbarRevealBtn.addEventListener('click', () => {
       if (!currentChallenge) return;
-      const modal = document.getElementById('result-modal');
-      if (modal) modal.style.display = 'flex';
-      handleRevealSolution();
+      showConfirm(
+        'End Exercise & Reveal Solution?',
+        'Ending the exercise will unlock the author\'s flawed assumption, edge case test, and verified 1-line surgical fix.',
+        () => endExerciseSession()
+      );
     });
   }
 
@@ -135,8 +276,19 @@ function initWorkbench() {
     } else if (e.key === 'Escape') {
       closeResultModal();
       closeStatsModal();
+      closeMemoryModal();
     }
   });
+
+  // Auto-skip briefing on repeat visits
+  if (localStorage.getItem('rca_briefing_seen') === 'true') {
+    const briefingModal = document.getElementById('briefing-modal');
+    if (briefingModal) briefingModal.style.display = 'none';
+    isSessionActive = true;
+    challengeStartTime = Date.now();
+    if (stagnationTimer) clearInterval(stagnationTimer);
+    stagnationTimer = setInterval(checkStagnation, 5000);
+  }
 
   // Preload initial challenge data in background
   fetchChallenge(false);
@@ -309,6 +461,8 @@ function startReviewSession() {
   const briefingModal = document.getElementById('briefing-modal');
   if (briefingModal) briefingModal.style.display = 'none';
 
+  localStorage.setItem('rca_briefing_seen', 'true');
+
   isSessionActive = true;
   isPaused = false;
   challengeStartTime = Date.now();
@@ -363,9 +517,19 @@ async function fetchChallenge(startTimer = true) {
   hideStagnationNudge();
   closeResultModal();
 
-  if (startTimer && isSessionActive) {
+  if (startTimer) {
+    isSessionActive = true;
+    isPaused = false;
     challengeStartTime = Date.now();
     totalPausedDuration = 0;
+    if (stagnationTimer) clearInterval(stagnationTimer);
+    stagnationTimer = setInterval(checkStagnation, 5000);
+  }
+
+  const refreshBtn = document.getElementById('btn-refresh');
+  if (refreshBtn) {
+    refreshBtn.disabled = true;
+    refreshBtn.style.opacity = '0.6';
   }
 
   // Show loading state in editor
@@ -377,7 +541,16 @@ async function fetchChallenge(startTimer = true) {
   `;
 
   try {
-    const response = await fetch(`${API_BASE}/api/challenge`);
+    const categorySelect = document.getElementById('select-category');
+    const selectedCat = categorySelect ? categorySelect.value : 'adaptive';
+    let challengeUrl = `${API_BASE}/api/challenge`;
+    if (selectedCat && selectedCat !== 'adaptive') {
+      challengeUrl += `?category=${encodeURIComponent(selectedCat)}`;
+    } else {
+      challengeUrl += `?adaptive=true`;
+    }
+
+    const response = await fetch(challengeUrl);
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
@@ -421,6 +594,12 @@ async function fetchChallenge(startTimer = true) {
     if (serverStatus) {
       serverStatus.querySelector('.status-dot').style.backgroundColor = 'var(--accent-rose)';
       serverStatus.querySelector('.status-text').textContent = 'Disconnected';
+    }
+  } finally {
+    const refreshBtn = document.getElementById('btn-refresh');
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.style.opacity = '1';
     }
   }
 }
@@ -511,7 +690,7 @@ function selectLine(lineNum, lineText, rowElement) {
   // Auto-prefill replacement line input with selected code
   const fixInput = document.getElementById('input-fix');
   if (fixInput && (!fixInput.value || fixInput.dataset.autoPrefilled === 'true')) {
-    fixInput.value = lineText;
+    fixInput.value = lineText.trim();
     fixInput.dataset.autoPrefilled = 'true';
   }
 
@@ -624,7 +803,7 @@ function hideStagnationNudge() {
  */
 async function handleAttemptSubmit() {
   if (!selected_line) {
-    alert('Please click on a code line in the inspector to select the fault location.');
+    showToast('Please click on a code line in the inspector to select the fault location.', 'warning');
     return;
   }
 
@@ -635,16 +814,20 @@ async function handleAttemptSubmit() {
   const submitBtn = document.getElementById('btn-submit');
 
   if (!explInput && !expInput && !obsInput) {
-    alert('Please enter your analysis or hypothesis before submitting.');
+    showToast('Please enter your analysis or hypothesis before submitting.', 'warning');
     return;
   }
 
-  // Construct full fixed code by replacing the selected line
-  const lines = (currentChallenge.code || '').split('\n');
-  if (selected_line >= 1 && selected_line <= lines.length && fixInput) {
-    lines[selected_line - 1] = fixInput;
+  // Construct full fixed code by replacing the selected line, preserving original line indentation
+  let fullFixedCode = "";
+  if (selected_line >= 1 && fixInput) {
+    const lines = (currentChallenge.code || '').split('\n');
+    if (selected_line <= lines.length) {
+      const leadingWhitespace = (lines[selected_line - 1].match(/^\s*/) || [''])[0];
+      lines[selected_line - 1] = leadingWhitespace + fixInput;
+      fullFixedCode = lines.join('\n');
+    }
   }
-  const fullFixedCode = lines.join('\n');
 
   const payload = {
     challenge_id: currentChallenge.id,
@@ -671,9 +854,10 @@ async function handleAttemptSubmit() {
 
     const result = await response.json();
     renderResultModal(result);
+    refreshMemoryState();
   } catch (err) {
     console.error('Submission failed:', err);
-    alert(`Submission error: ${err.message}`);
+    showToast(`Submission error: ${err.message}`, 'error');
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submit Analysis & Verify Fix';
@@ -719,12 +903,14 @@ function renderResultModal(result) {
     badgeComprehension.className = 'verdict-badge badge-danger';
   }
 
-  // Verdict Banner
+  // Verdict Banner & Celebration
   if (result.verdict === 'found_and_understood') {
     verdictTitle.textContent = 'Exemplary Comprehension';
     verdictTag.textContent = 'FOUND & UNDERSTOOD';
     verdictTag.className = 'verdict-status-label status-success';
     verdictDesc.textContent = 'You identified the exact defect location and accurately articulated the underlying flawed mental model.';
+    playCelebration();
+    showToast('🎉 Exemplary Comprehension! Defect identified and verified.', 'success', 4000);
   } else if (result.verdict === 'found_not_understood') {
     verdictTitle.textContent = 'Superficial Patch Identified';
     verdictTag.textContent = 'FOUND BUT NOT UNDERSTOOD';
@@ -740,6 +926,10 @@ function renderResultModal(result) {
     verdictTag.textContent = 'NOT FOUND OR UNDERSTOOD';
     verdictTag.className = 'verdict-status-label status-danger';
     verdictDesc.textContent = 'Neither the line selection nor the conceptual rationale identified the defect.';
+  }
+
+  if (det.fix_passes) {
+    showToast('✅ Fix Verified! Your code passed the edge-case sandbox test.', 'success', 3500);
   }
 
   feedbackEl.textContent = comp.feedback || 'Evaluation completed.';
@@ -763,6 +953,22 @@ function renderResultModal(result) {
 function closeResultModal() {
   const modal = document.getElementById('result-modal');
   if (modal) modal.style.display = 'none';
+
+  // Restore sections that endExerciseSession may have hidden
+  const verdictBadgesRow = document.querySelector('.verdict-badges-row');
+  const verdictBanner = document.getElementById('verdict-banner');
+  const feedbackCard = document.querySelector('.feedback-card');
+  const decisionGrid = document.querySelector('.decision-grid');
+  if (verdictBadgesRow) verdictBadgesRow.style.display = '';
+  if (verdictBanner) verdictBanner.style.display = '';
+  if (feedbackCard) feedbackCard.style.display = '';
+  if (decisionGrid) decisionGrid.style.display = '';
+
+  // Remove revealed-bug highlights from code editor
+  const codeContainer = document.getElementById('code-container');
+  if (codeContainer) {
+    codeContainer.querySelectorAll('.code-row.revealed-bug').forEach(r => r.classList.remove('revealed-bug'));
+  }
 }
 
 /**
@@ -774,6 +980,9 @@ function handleRetryGrind() {
   localStorage.setItem('rca_grit_retries', gritRetriesCount);
   updateGritUI();
   closeResultModal();
+
+  isSessionActive = true;
+  isPaused = false;
 
   // Highlight and focus the expected behavior input
   const expInput = document.getElementById('input-expected');
@@ -840,11 +1049,119 @@ async function handleRevealSolution() {
     }
   } catch (err) {
     console.error('Failed to reveal solution:', err);
-    alert('Could not retrieve solution breakdown from the server.');
+    showToast('Could not retrieve solution breakdown from the server.', 'error');
     if (revealBtn) {
       revealBtn.disabled = false;
       revealBtn.textContent = 'Reveal Verified Solution';
     }
+  }
+}
+
+/**
+ * Fully end the current exercise session:
+ * 1. Stop session timers and set session inactive
+ * 2. Fetch and display the verified solution breakdown
+ * 3. Highlight the buggy line in the code editor
+ * 4. Present the result modal in "Exercise Concluded" mode
+ */
+async function endExerciseSession() {
+  if (!currentChallenge) return;
+
+  // 1. Stop session
+  isSessionActive = false;
+  isPaused = false;
+  if (stagnationTimer) {
+    clearInterval(stagnationTimer);
+    stagnationTimer = null;
+  }
+
+  // Hide stagnation toast if showing
+  const toast = document.getElementById('stagnation-toast');
+  if (toast) toast.style.display = 'none';
+
+  // 2. Fetch the verified solution from the backend
+  try {
+    const resp = await fetch(`${API_BASE}/api/reveal`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challenge_id: currentChallenge.id }),
+    });
+
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    }
+
+    const data = await resp.json();
+
+    // 3. Highlight buggy line in code editor
+    const buggyLineNum = data.buggy_line_number;
+    if (buggyLineNum) {
+      const codeContainer = document.getElementById('code-container');
+      if (codeContainer) {
+        // Remove any existing selections
+        codeContainer.querySelectorAll('.code-row.selected').forEach(r => r.classList.remove('selected'));
+        // Add revealed-bug highlight
+        const bugRow = codeContainer.querySelector(`.code-row[data-line="${buggyLineNum}"]`);
+        if (bugRow) {
+          bugRow.classList.add('revealed-bug');
+          bugRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+
+    // 4. Populate the result modal in "Exercise Concluded" mode
+    const modal = document.getElementById('result-modal');
+    const verdictTitle = document.getElementById('verdict-title');
+    const evalTag = document.getElementById('modal-eval-tag');
+    const verdictBadgesRow = document.querySelector('.verdict-badges-row');
+    const verdictBanner = document.getElementById('verdict-banner');
+    const feedbackCard = document.querySelector('.feedback-card');
+    const decisionGrid = document.querySelector('.decision-grid');
+    const breakdownBox = document.getElementById('solution-breakdown-box');
+
+    // Update header to "Exercise Concluded"
+    if (evalTag) evalTag.textContent = 'Exercise Concluded';
+    if (verdictTitle) verdictTitle.textContent = 'Solution & Reference Breakdown';
+
+    // Hide evaluation-specific sections (verdict badges, banner, feedback, grind/surrender cards)
+    if (verdictBadgesRow) verdictBadgesRow.style.display = 'none';
+    if (verdictBanner) verdictBanner.style.display = 'none';
+    if (feedbackCard) feedbackCard.style.display = 'none';
+    if (decisionGrid) decisionGrid.style.display = 'none';
+
+    // Populate and show solution breakdown directly
+    const msgEl = document.getElementById('breakdown-pedagogical-msg');
+    const buggyLineEl = document.getElementById('breakdown-buggy-line');
+    const correctLineEl = document.getElementById('breakdown-correct-line');
+    const assumptionEl = document.getElementById('breakdown-assumption');
+    const edgeTestEl = document.getElementById('breakdown-edge-test');
+
+    if (msgEl) msgEl.textContent = data.pedagogical_message;
+    if (buggyLineEl) buggyLineEl.textContent = `Line ${data.buggy_line_number}`;
+    if (correctLineEl) correctLineEl.textContent = data.correct_line;
+    if (assumptionEl) assumptionEl.textContent = data.flawed_assumption;
+    if (edgeTestEl) {
+      const inp = data.edge_case_test && data.edge_case_test.input ? JSON.stringify(data.edge_case_test.input) : 'N/A';
+      const exp = data.edge_case_test && data.edge_case_test.expected !== undefined ? JSON.stringify(data.edge_case_test.expected) : 'N/A';
+      edgeTestEl.textContent = `Input: ${inp} => Expected: ${exp}`;
+    }
+
+    if (breakdownBox) {
+      breakdownBox.style.display = 'flex';
+    }
+
+    // Update streak badge from response
+    if (data.current_streak !== undefined) {
+      const streakBadge = document.getElementById('topbar-streak-badge');
+      if (streakBadge) streakBadge.textContent = `🔥 Streak: ${data.current_streak}`;
+    }
+
+    // Show modal
+    if (modal) modal.style.display = 'flex';
+
+  } catch (err) {
+    console.error('Failed to end exercise:', err);
+    showToast('Could not retrieve solution breakdown from the server.', 'error');
   }
 }
 
@@ -887,3 +1204,94 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+/* ==========================================================================
+   Dynamic Session Memory (memory.md) Handlers
+   ========================================================================== */
+
+let latestMemoryData = null;
+
+/**
+ * Fetch and update live session memory & streak indicators
+ */
+async function refreshMemoryState() {
+  try {
+    const res = await fetch(`${API_BASE}/api/memory`);
+    if (!res.ok) return;
+
+    const data = await res.json();
+    latestMemoryData = data;
+    const stats = data.stats || {};
+    const streak = stats.current_streak || 0;
+    const solved = stats.total_solved || 0;
+    const total = stats.total_attempts || 0;
+    const acc = stats.overall_accuracy || 0;
+    const weakest = data.weakest_category || 'boundary_inclusive';
+
+    // 1. Update topbar streak badge
+    const topbarStreak = document.getElementById('topbar-streak-badge');
+    if (topbarStreak) {
+      topbarStreak.textContent = `🔥 Streak: ${streak}`;
+      topbarStreak.classList.add('streak-updated');
+      setTimeout(() => topbarStreak.classList.remove('streak-updated'), 500);
+    }
+
+    // 2. Update modal stats
+    const modalStreak = document.getElementById('modal-memory-streak');
+    if (modalStreak) modalStreak.textContent = `🔥 Streak: ${streak}`;
+
+    const statSolved = document.getElementById('mem-stat-solved');
+    if (statSolved) statSolved.textContent = `${solved}/${total} (${acc}%)`;
+
+    const statStreak = document.getElementById('mem-stat-streak');
+    if (statStreak) statStreak.textContent = streak;
+
+    const statTarget = document.getElementById('mem-stat-target');
+    if (statTarget) statTarget.textContent = weakest;
+
+    const markdownViewer = document.getElementById('memory-markdown-text');
+    if (markdownViewer && data.markdown) {
+      markdownViewer.textContent = data.markdown;
+    }
+  } catch (err) {
+    console.error('Failed to refresh memory state:', err);
+  }
+}
+
+/**
+ * Open the Session Memory (memory.md) Modal
+ */
+function openMemoryModal() {
+  const modal = document.getElementById('memory-modal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  refreshMemoryState();
+}
+
+/**
+ * Close Session Memory Modal
+ */
+function closeMemoryModal() {
+  const modal = document.getElementById('memory-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+/**
+ * Download memory.md file as local export
+ */
+function downloadMemoryFile() {
+  const mdText = (latestMemoryData && latestMemoryData.markdown)
+    ? latestMemoryData.markdown
+    : '# Reverse Code Arena — Student Session Memory\nLoading...';
+
+  const blob = new Blob([mdText], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `session_memory_${new Date().toISOString().slice(0, 10)}.md`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+

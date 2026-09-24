@@ -85,20 +85,24 @@ def _clean_json(text: str) -> str:
     return t
 
 
-def evaluate_student_fix(fixed_code: str, function_name: str, edge_test: Dict[str, Any], timeout_seconds: int = 4) -> bool:
-    """
-    Subprocess test: checks if student's fixed code actually runs and passes the edge case.
-    """
-    worker = f"""
+EVAL_WORKER = """
 import sys, json
+
 try:
-    ns = {{}}
-    exec('''{fixed_code}''', ns)
-    fn = ns.get('{function_name}')
+    data = json.loads(sys.stdin.read())
+    code = data["fixed_code"]
+    fn_name = data["function_name"]
+    edge_test = data.get("edge_test", {})
+
+    ns = {}
+    exec(code, ns)
+    fn = ns.get(fn_name)
     if not fn or not callable(fn):
         sys.exit(1)
-    inp = {json.dumps(edge_test.get('input', []))}
-    expected = {json.dumps(edge_test.get('expected'))}
+
+    inp = edge_test.get("input", [])
+    expected = edge_test.get("expected")
+
     actual = fn(*inp) if isinstance(inp, list) else fn(inp)
     if actual == expected:
         sys.exit(0)
@@ -107,8 +111,25 @@ try:
 except Exception:
     sys.exit(3)
 """
+
+def evaluate_student_fix(fixed_code: str, function_name: str, edge_test: Dict[str, Any], timeout_seconds: int = 4) -> bool:
+    """
+    Subprocess test: checks if student's fixed code actually runs and passes the edge case.
+    Uses stdin JSON pipe to avoid Windows argument and quotation escaping failures.
+    """
     try:
-        proc = subprocess.run([sys.executable, "-c", worker], capture_output=True, timeout=timeout_seconds)
+        payload = json.dumps({
+            "fixed_code": fixed_code,
+            "function_name": function_name,
+            "edge_test": edge_test,
+        })
+        proc = subprocess.run(
+            [sys.executable, "-c", EVAL_WORKER],
+            input=payload,
+            text=True,
+            capture_output=True,
+            timeout=timeout_seconds,
+        )
         return proc.returncode == 0
     except Exception:
         return False

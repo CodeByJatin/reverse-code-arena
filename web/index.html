@@ -31,10 +31,23 @@
           <span class="badge badge-difficulty" id="badge-difficulty" data-tooltip="Challenge difficulty tier based on fault complexity">Easy</span>
           <span class="badge badge-bug" id="bug-type-badge" data-tooltip="Defect classification seeded in this verification challenge">Bug: Scanning...</span>
           <span class="badge badge-bug" id="topbar-grit-badge" data-tooltip="Grit Tracker: Attempts made in Grind Mode without revealing the answer">Grit: 0 Retries</span>
+          <span class="badge badge-streak" id="topbar-streak-badge" data-tooltip="Session Streak: Consecutive verified challenges solved without error">🔥 Streak: 0</span>
         </div>
       </div>
 
       <div class="topbar-right">
+        <!-- Challenge Category Selector (Adaptive / Manual) -->
+        <div class="category-select-wrapper" title="Select practice mode: Adaptive or specific bug category">
+          <select id="select-category" class="category-dropdown">
+            <option value="adaptive">🎯 Adaptive (Target Weakness)</option>
+            <option value="boundary_inclusive">Boundary (>= vs >)</option>
+            <option value="off_by_one">Off-By-One (Loops)</option>
+            <option value="int_division">Int Division (/ vs //)</option>
+            <option value="mutable_default">Mutable Default</option>
+            <option value="shallow_copy">Shallow Copy</option>
+          </select>
+        </div>
+
         <!-- Light / Dark Theme Mode Toggle -->
         <button class="btn btn-tool theme-toggle-btn" id="btn-theme-toggle" title="Toggle Light or Dark theme" aria-label="Toggle Theme">
           <svg id="theme-icon-dark" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -73,6 +86,13 @@
             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
           </svg>
           <span>New Task</span>
+        </button>
+        <button class="btn btn-tool" id="btn-memory" title="View dynamic session memory report (memory.md)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"></path>
+            <line x1="9" y1="21" x2="15" y2="21"></line>
+          </svg>
+          <span>Memory</span>
         </button>
         <button class="btn btn-tool" id="btn-stats" title="View Verification and Security Audit Stats">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -511,6 +531,55 @@
     </div>
   </div>
 
+  <!-- 4.1. Dynamic Session Memory Modal (memory.md) -->
+  <div class="modal-backdrop" id="memory-modal" style="display: none;">
+    <div class="modal-card memory-card">
+      <div class="modal-header">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+          <div>
+            <span class="card-tag">Student Cognitive Profile</span>
+            <h2 class="modal-title">Dynamic Session Memory & Blind Spots</h2>
+          </div>
+          <span class="badge badge-streak" id="modal-memory-streak">🔥 Streak: 0</span>
+        </div>
+      </div>
+
+      <div class="memory-content-wrapper" id="memory-content-area">
+        <div class="memory-stats-grid">
+          <div class="stat-box">
+            <span class="stat-number" id="mem-stat-solved">0/0</span>
+            <span class="stat-label">Solved & Accuracy</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-number" id="mem-stat-streak">0</span>
+            <span class="stat-label">Current Verified Streak</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-number" id="mem-stat-target" style="font-size: 1.05rem; text-transform: lowercase;">scanning...</span>
+            <span class="stat-label">Adaptive Practice Focus</span>
+          </div>
+        </div>
+
+        <div class="memory-markdown-container">
+          <div class="memory-markdown-header">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span class="file-icon">📄</span>
+              <span style="font-family: var(--font-mono); font-weight: 600; font-size: 0.82rem;">memory.md (Disk Engine Output)</span>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btn-download-memory" title="Download memory.md as local report">
+              📥 Export Markdown
+            </button>
+          </div>
+          <pre class="memory-markdown-viewer" id="memory-markdown-text">Loading session memory...</pre>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="btn-close-memory">Return to Workbench</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 5. Feature 2: Anti-Stagnation Scaffold Nudge (Zhang Ch. 3 & 4) -->
   <div class="stagnation-toast" id="stagnation-toast" style="display: none;">
     <div class="stagnation-header">
@@ -528,6 +597,11 @@
       You have been reading for an extended period. Rather than repeatedly scanning the entire file, trace the first unit test input line-by-line from the entry point.
     </p>
   </div>
+  <!-- 6. In-Page Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- 7. Celebration Overlay (confetti on full mastery) -->
+  <canvas id="celebration-canvas" style="position:fixed;inset:0;pointer-events:none;z-index:99999;"></canvas>
 
   <script src="app.js"></script>
 </body>
