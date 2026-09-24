@@ -1439,6 +1439,9 @@ body.theme-light .code-input {
    Footer Status Bar
    -------------------------------------------------------------------------- */
 .workbench-footer {
+  position: relative;
+  z-index: 1000;
+  overflow: visible;
   height: var(--footer-height);
   background: var(--bg-glass-base);
   backdrop-filter: blur(20px);
@@ -1456,15 +1459,56 @@ body.theme-light .code-input {
 .footer-right {
   display: flex;
   gap: 0.65rem;
+  position: relative;
+  z-index: 1001;
+  overflow: visible;
 }
 
 .footer-tag {
+  position: relative;
+  z-index: 1002;
+  cursor: help;
   background: rgba(255, 255, 255, 0.03);
   padding: 0.12rem 0.45rem;
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
   font-size: 0.68rem;
   border: 1px solid var(--border-glass);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.footer-tag:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-glass-medium);
+}
+
+body.theme-light .footer-tag:hover {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.25);
+}
+
+/* Footer tag tooltips open upwards from the bottom bar, right-aligned to avoid screen overflow */
+.footer-tag[data-tooltip]::after {
+  bottom: calc(100% + 8px);
+  left: auto;
+  right: 0;
+  transform: translateY(4px);
+  z-index: 9999;
+}
+
+.footer-tag[data-tooltip]::before {
+  bottom: calc(100% + 2px);
+  left: auto;
+  right: 20px;
+  transform: translateY(4px);
+  z-index: 9999;
+}
+
+.footer-tag[data-tooltip]:hover::after,
+.footer-tag[data-tooltip]:hover::before {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(0) !important;
 }
 
 /* --------------------------------------------------------------------------
