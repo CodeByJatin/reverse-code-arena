@@ -4,3 +4,7 @@ __pycache__/
 .venv/
 venv/
 data/attempts.json
+data/users.json
+data/users/
+data/stats.json
+scratch/

@@ -1,45 +1,166 @@
 [
   {
-    "id": "ch_off_by_one_be9755",
-    "task_description": "Find the maximum element in a list of numbers. Returns None if the list is empty.",
-    "function_name": "find_maximum",
-    "code": "def find_maximum(numbers):\n    \"\"\"\n    Finds and returns the maximum number in a list of numbers.\n    Returns None if the list is empty.\n    \"\"\"\n    if not isinstance(numbers, list):\n        raise TypeError(\"Input must be a list\")\n    \n    if len(numbers) == 0:\n        return None\n    \n    max_value = numbers[0]\n    list_length = len(numbers)\n    \n    for index in range(1, list_length - 1):\n        current_value = numbers[index]\n        if current_value > max_value:\n            max_value = current_value\n            \n    return max_value",
-    "num_lines": 20,
-    "bug_type": "off_by_one",
-    "buggy_line_number": 15,
-    "flawed_assumption": "range() covers the last element or boundary element",
+    "id": "easy_paginate_query_results",
+    "title": "Paginate Query Results",
+    "module_tag": "Module: APIMiddleware",
+    "difficulty": "easy",
+    "base_points": 30,
+    "function_name": "paginate_records",
+    "task_description": "Paginates a list of database records into chunks of a given page_size. Returns a list of pages (each page is a list). If records is empty, returns an empty list []. All records must be preserved across pages, including any trailing remainder page.",
+    "code": "def paginate_records(records, page_size):\n    if not records or page_size <= 0:\n        return []\n    pages = []\n    total = len(records)\n    num_pages = total // page_size\n    for i in range(num_pages):\n        start = i * page_size\n        pages.append(records[start:start + page_size])\n    return pages",
+    "num_lines": 10,
+    "bug_type": "int_division",
+    "buggy_line_number": 6,
+    "flawed_assumption": "Integer division total // page_size accounts for remaining items when total % page_size != 0",
+    "correct_line": "    num_pages = (total + page_size - 1) // page_size",
+    "examples": [
+      {
+        "input": [
+          [
+            1,
+            2,
+            3,
+            4
+          ],
+          2
+        ],
+        "expected": [
+          [
+            1,
+            2
+          ],
+          [
+            3,
+            4
+          ]
+        ],
+        "observed": [
+          [
+            1,
+            2
+          ],
+          [
+            3,
+            4
+          ]
+        ],
+        "explanation": "When record count divides evenly, both flawed and fixed code yield 2 pages."
+      },
+      {
+        "input": [
+          [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          2
+        ],
+        "expected": [
+          [
+            1,
+            2
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            5
+          ]
+        ],
+        "observed": [
+          [
+            1,
+            2
+          ],
+          [
+            3,
+            4
+          ]
+        ],
+        "explanation": "5 // 2 is 2, so the last element [5] is completely dropped by the flawed calculation."
+      }
+    ],
+    "constraints": [
+      "0 <= len(records) <= 10^5",
+      "1 <= page_size <= 1000",
+      "All items must be ordered consecutively across pages"
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "penalty": 5,
+        "title": "Mental Tracing Nudge",
+        "text": "Trace what happens when len(records) is 5 and page_size is 2. How many pages does total // page_size produce?"
+      },
+      {
+        "level": 2,
+        "penalty": 10,
+        "title": "Target Invariant",
+        "text": "Integer floor division // rounds down. If there is a remainder, an extra page is required to hold remaining items."
+      },
+      {
+        "level": 3,
+        "penalty": 10,
+        "title": "Surgical Logic Clue",
+        "text": "Calculate ceiling division on line 6: (total + page_size - 1) // page_size."
+      }
+    ],
     "passing_tests": [
       {
         "input": [
           [
             10,
             20,
-            5
-          ]
+            30,
+            40
+          ],
+          2
         ],
-        "expected": 20
+        "expected": [
+          [
+            10,
+            20
+          ],
+          [
+            30,
+            40
+          ]
+        ]
       },
       {
         "input": [
           [
-            100,
-            50,
-            20,
-            10
-          ]
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          3
         ],
-        "expected": 100
+        "expected": [
+          [
+            1,
+            2,
+            3
+          ],
+          [
+            4,
+            5,
+            6
+          ]
+        ]
       },
       {
         "input": [
-          [
-            -5,
-            -2,
-            -10,
-            -15
-          ]
+          [],
+          5
         ],
-        "expected": -2
+        "expected": []
       }
     ],
     "edge_case_test": {
@@ -47,229 +168,700 @@
         [
           1,
           2,
-          3
-        ]
-      ],
-      "expected": 3
-    },
-    "correct_line": "    for index in range(1, list_length):"
-  },
-  {
-    "id": "ch_boundary_inclusive_82bbd6",
-    "task_description": "Filters a list of numeric values, returning a new list containing only the elements that are greater than or equal to the specified threshold. Non-numeric values in the input list are ignored.",
-    "function_name": "filter_by_threshold",
-    "code": "def filter_by_threshold(data, threshold):\n    \"\"\"\n    Filters a list of numeric values, returning a new list containing\n    only the elements that are greater than or equal to the specified threshold.\n    Non-numeric values in the input list are ignored.\n    \"\"\"\n    if not isinstance(data, list):\n        raise TypeError(\"Input data must be a list\")\n    filtered_results = []\n    for item in data:\n        if not isinstance(item, (int, float)):\n            continue\n        if item > threshold:\n            filtered_results.append(item)\n    return filtered_results",
-    "num_lines": 15,
-    "bug_type": "boundary_inclusive",
-    "buggy_line_number": 13,
-    "flawed_assumption": "A boundary threshold is strictly greater/less when it should include the boundary value (or vice versa)",
-    "passing_tests": [
-      {
-        "input": [
-          [
-            10,
-            20,
-            30
-          ],
-          15
+          3,
+          4,
+          5
         ],
-        "expected": [
-          20,
-          30
-        ]
-      },
-      {
-        "input": [
-          [
-            1.5,
-            -2.3,
-            0.0,
-            5.5
-          ],
-          1.0
-        ],
-        "expected": [
-          1.5,
-          5.5
-        ]
-      },
-      {
-        "input": [
-          [
-            "abc",
-            5,
-            12,
-            3
-          ],
-          10
-        ],
-        "expected": [
-          12
-        ]
-      }
-    ],
-    "edge_case_test": {
-      "input": [
-        [
-          5,
-          10,
-          15
-        ],
-        10
+        2
       ],
       "expected": [
-        10,
-        15
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          5
+        ]
       ]
-    },
-    "correct_line": "        if item >= threshold:"
+    }
   },
   {
-    "id": "ch_int_division_44fc6a",
-    "task_description": "Calculates the percentage of scores that are greater than or equal to the threshold, rounded to 2 decimal places. Returns 0.0 if the input list is empty or invalid.",
-    "function_name": "calculate_pass_percentage",
-    "code": "def calculate_pass_percentage(scores, threshold):\n    if not isinstance(scores, list):\n        return 0.0\n        \n    total_items = len(scores)\n    if total_items == 0:\n        return 0.0\n        \n    passed_count = 0\n    for score in scores:\n        if score >= threshold:\n            passed_count += 1\n            \n    percentage = (passed_count * 100) // total_items\n    return round(float(percentage), 2)",
-    "num_lines": 15,
-    "bug_type": "int_division",
-    "buggy_line_number": 14,
-    "flawed_assumption": "Integer division (//) preserves precision or truncation before rounding yields expected results",
+    "id": "easy_cart_tier_discount",
+    "title": "Calculate Cart Tier Discount",
+    "module_tag": "Module: PricingEngine",
+    "difficulty": "easy",
+    "base_points": 30,
+    "function_name": "calculate_discount",
+    "task_description": "Calculates the percentage discount for a shopping cart subtotal based on promotional tiers: Orders of $100.00 or more qualify for a 15% discount (0.15). Orders of $50.00 or more qualify for a 5% discount (0.05). Orders strictly below $50.00 receive 0.0.",
+    "code": "def calculate_discount(subtotal):\n    if subtotal > 100.0:\n        return 0.15\n    elif subtotal > 50.0:\n        return 0.05\n    else:\n        return 0.0",
+    "num_lines": 7,
+    "bug_type": "boundary_inclusive",
+    "buggy_line_number": 2,
+    "flawed_assumption": "Used strict greater-than (>) instead of inclusive greater-than-or-equal (>=)",
+    "correct_line": "    if subtotal >= 100.0:",
+    "examples": [
+      {
+        "input": [
+          150.0
+        ],
+        "expected": 0.15,
+        "observed": 0.15,
+        "explanation": "150.0 is strictly greater than 100.0, so the 15% discount is applied."
+      },
+      {
+        "input": [
+          100.0
+        ],
+        "expected": 0.15,
+        "observed": 0.05,
+        "explanation": "The specification states '$100 or more', but subtotal > 100 fails on exactly 100.0, incorrectly dropping to 5%."
+      }
+    ],
+    "constraints": [
+      "subtotal >= 0.0",
+      "Returns float discount rate between 0.0 and 1.0"
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "penalty": 5,
+        "title": "Mental Tracing Nudge",
+        "text": "Check what happens when a customer's cart is exactly $100.00."
+      },
+      {
+        "level": 2,
+        "penalty": 10,
+        "title": "Target Invariant",
+        "text": "The business contract specifies 'orders of $100.00 or more'. Compare > vs >=."
+      },
+      {
+        "level": 3,
+        "penalty": 10,
+        "title": "Surgical Logic Clue",
+        "text": "On line 2, replace `subtotal > 100.0` with `subtotal >= 100.0`."
+      }
+    ],
     "passing_tests": [
       {
         "input": [
-          [
-            10,
-            20,
-            30,
-            40
-          ],
-          25
+          120.0
         ],
-        "expected": 50.0
+        "expected": 0.15
       },
       {
         "input": [
-          [
-            80,
-            90,
-            100
-          ],
-          80
+          60.0
         ],
-        "expected": 100.0
+        "expected": 0.05
       },
       {
         "input": [
-          [
-            50,
-            50,
-            50,
-            50,
-            50
-          ],
-          60
+          25.0
         ],
         "expected": 0.0
       }
     ],
     "edge_case_test": {
       "input": [
-        [
-          70,
-          80,
-          90
-        ],
-        80
+        100.0
       ],
-      "expected": 66.67
-    },
-    "correct_line": "    percentage = (passed_count * 100) / total_items"
+      "expected": 0.15
+    }
   },
   {
-    "id": "ch_boundary_inclusive_adm18",
-    "task_description": "Determines whether an applicant is eligible for admission based on their age meeting or exceeding the minimum cutoff age (e.g., 18). Non-integer inputs return False.",
-    "function_name": "check_admission_eligibility",
-    "code": "def check_admission_eligibility(applicant_age, min_age=18):\n    if not isinstance(applicant_age, int):\n        return False\n    if applicant_age < 0:\n        return False\n    if applicant_age > min_age:\n        return True\n    return False",
-    "num_lines": 8,
-    "bug_type": "boundary_inclusive",
-    "buggy_line_number": 6,
-    "flawed_assumption": "A boundary threshold is strictly greater/less when it should include the boundary value (or vice versa)",
+    "id": "easy_compare_semver_releases",
+    "title": "Compare SemVer Release Tags",
+    "module_tag": "Module: DevOpsPipeline",
+    "difficulty": "easy",
+    "base_points": 30,
+    "function_name": "is_newer_version",
+    "task_description": "Checks whether candidate_tag represents a strictly newer semantic version than current_tag. Tags are formatted as 'MAJOR.MINOR.PATCH' (e.g. '2.1.0'). Returns True if candidate_tag is newer, False otherwise.",
+    "code": "def is_newer_version(candidate_tag, current_tag):\n    candidate_parts = candidate_tag.split('.')\n    current_parts = current_tag.split('.')\n    return candidate_parts > current_parts",
+    "num_lines": 4,
+    "bug_type": "type_coercion",
+    "buggy_line_number": 4,
+    "flawed_assumption": "Comparing lists of strings compares versions numerically rather than lexicographically",
+    "correct_line": "    return [int(x) for x in candidate_parts] > [int(x) for x in current_parts]",
+    "examples": [
+      {
+        "input": [
+          "2.0.0",
+          "1.9.0"
+        ],
+        "expected": true,
+        "observed": true,
+        "explanation": "'2' > '1' evaluates to True under string comparison."
+      },
+      {
+        "input": [
+          "10.0.0",
+          "9.0.0"
+        ],
+        "expected": true,
+        "observed": false,
+        "explanation": "Lexicographically, '10' < '9' because character '1' precedes '9', causing 10.0.0 to be falsely treated as older than 9.0.0."
+      }
+    ],
+    "constraints": [
+      "Tags always contain exactly 3 numeric components separated by '.'",
+      "Returns boolean True or False"
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "penalty": 5,
+        "title": "Mental Tracing Nudge",
+        "text": "What does Python evaluate for `'10' > '9'` when both are strings?"
+      },
+      {
+        "level": 2,
+        "penalty": 10,
+        "title": "Target Invariant",
+        "text": "Lists of strings are compared lexicographically by character code. SemVer version numbers must be compared as integers."
+      },
+      {
+        "level": 3,
+        "penalty": 10,
+        "title": "Surgical Logic Clue",
+        "text": "Convert the components to integers before comparing: `[int(x) for x in candidate_parts] > [int(x) for x in current_parts]`."
+      }
+    ],
     "passing_tests": [
       {
         "input": [
-          25,
-          18
+          "1.2.0",
+          "1.1.0"
         ],
         "expected": true
       },
       {
         "input": [
-          15,
-          18
+          "2.0.0",
+          "2.0.0"
         ],
         "expected": false
       },
       {
         "input": [
-          -5,
-          18
+          "0.9.5",
+          "1.0.0"
         ],
         "expected": false
       }
     ],
     "edge_case_test": {
       "input": [
-        18,
-        18
+        "10.0.0",
+        "9.0.0"
       ],
       "expected": true
-    },
-    "correct_line": "    if applicant_age >= min_age:"
+    }
   },
   {
-    "id": "ch_off_by_one_target_idx",
-    "task_description": "Searches a list of items for the first occurrence of a target value and returns its index. Returns -1 if the target is not present.",
-    "function_name": "find_target_index",
-    "code": "def find_target_index(items, target):\n    if not isinstance(items, list):\n        raise TypeError(\"Items must be a list\")\n    n = len(items)\n    if n == 0:\n        return -1\n    for idx in range(n - 1):\n        if items[idx] == target:\n            return idx\n    return -1",
-    "num_lines": 11,
+    "id": "easy_truncate_log_payload",
+    "title": "Truncate Log Payload with Ellipsis",
+    "module_tag": "Module: LoggingService",
+    "difficulty": "easy",
+    "base_points": 30,
+    "function_name": "truncate_payload",
+    "task_description": "Clips a log message string so that its total length NEVER exceeds max_len. If len(msg) > max_len, the string is truncated and '...' is appended to indicate clipping, such that len(result) == max_len. If len(msg) <= max_len, msg is returned unmodified.",
+    "code": "def truncate_payload(msg, max_len=20):\n    if len(msg) <= max_len:\n        return msg\n    if max_len <= 3:\n        return msg[:max_len]\n    return msg[:max_len] + '...'",
+    "num_lines": 6,
     "bug_type": "off_by_one",
-    "buggy_line_number": 7,
-    "flawed_assumption": "range() covers the last element or boundary element",
+    "buggy_line_number": 6,
+    "flawed_assumption": "Slicing to max_len then adding 3 dots creates a string of length max_len",
+    "correct_line": "    return msg[:max_len - 3] + '...'",
+    "examples": [
+      {
+        "input": [
+          "hello",
+          10
+        ],
+        "expected": "hello",
+        "observed": "hello",
+        "explanation": "Length 5 is <= 10, returned unmodified."
+      },
+      {
+        "input": [
+          "abcdefghijklmno",
+          10
+        ],
+        "expected": "abcdefg...",
+        "observed": "abcdefghij...",
+        "explanation": "Flawed code produced a 13-character string ('abcdefghij...'), violating the strict max_len=10 constraint."
+      }
+    ],
+    "constraints": [
+      "len(result) <= max_len always",
+      "max_len >= 1"
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "penalty": 5,
+        "title": "Mental Tracing Nudge",
+        "text": "Count the length of `msg[:10] + '...'`. How many characters are in the resulting string?"
+      },
+      {
+        "level": 2,
+        "penalty": 10,
+        "title": "Target Invariant",
+        "text": "The ellipsis `'...'` takes up 3 characters. Slicing must reserve space for those 3 characters."
+      },
+      {
+        "level": 3,
+        "penalty": 10,
+        "title": "Surgical Logic Clue",
+        "text": "On line 6, slice up to `max_len - 3`: `return msg[:max_len - 3] + '...'`."
+      }
+    ],
+    "passing_tests": [
+      {
+        "input": [
+          "short",
+          10
+        ],
+        "expected": "short"
+      },
+      {
+        "input": [
+          "test",
+          4
+        ],
+        "expected": "test"
+      },
+      {
+        "input": [
+          "toolong",
+          2
+        ],
+        "expected": "to"
+      }
+    ],
+    "edge_case_test": {
+      "input": [
+        "abcdefghijklmno",
+        10
+      ],
+      "expected": "abcdefg..."
+    }
+  },
+  {
+    "id": "easy_filter_active_subscriptions",
+    "title": "Filter Active Subscriptions",
+    "module_tag": "Module: BillingService",
+    "difficulty": "easy",
+    "base_points": 30,
+    "function_name": "get_active_accounts",
+    "task_description": "Filters user account objects returning only those with an active status. An account is active if account['status'] == 'active'. Accounts with None, 'canceled', or 'past_due' must be excluded.",
+    "code": "def get_active_accounts(accounts):\n    active = []\n    for acc in accounts:\n        if acc.get('status') != 'canceled':\n            active.append(acc.get('id'))\n    return active",
+    "num_lines": 6,
+    "bug_type": "boundary_inclusive",
+    "buggy_line_number": 4,
+    "flawed_assumption": "Checking status != 'canceled' is equivalent to checking status == 'active'",
+    "correct_line": "        if acc.get('status') == 'active':",
+    "examples": [
+      {
+        "input": [
+          [
+            {
+              "id": 1,
+              "status": "active"
+            },
+            {
+              "id": 2,
+              "status": "canceled"
+            }
+          ]
+        ],
+        "expected": [
+          1
+        ],
+        "observed": [
+          1
+        ],
+        "explanation": "Active account included, canceled account excluded."
+      },
+      {
+        "input": [
+          [
+            {
+              "id": 1,
+              "status": "active"
+            },
+            {
+              "id": 2,
+              "status": "past_due"
+            }
+          ]
+        ],
+        "expected": [
+          1
+        ],
+        "observed": [
+          1,
+          2
+        ],
+        "explanation": "The flawed code checks != 'canceled', so past_due accounts are incorrectly treated as active."
+      }
+    ],
+    "constraints": [
+      "Accounts list contains dictionaries with 'id' and 'status'",
+      "Returns list of account ids"
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "penalty": 5,
+        "title": "Mental Tracing Nudge",
+        "text": "What happens if an account has status 'past_due' or 'suspended'?"
+      },
+      {
+        "level": 2,
+        "penalty": 10,
+        "title": "Target Invariant",
+        "text": "Excluding a single negative condition (!= 'canceled') permits other non-active statuses into the active pool."
+      },
+      {
+        "level": 3,
+        "penalty": 10,
+        "title": "Surgical Logic Clue",
+        "text": "Check explicitly for the positive state: `if acc.get('status') == 'active':`."
+      }
+    ],
     "passing_tests": [
       {
         "input": [
           [
-            10,
-            20,
-            30,
-            40
-          ],
-          20
+            {
+              "id": 101,
+              "status": "active"
+            },
+            {
+              "id": 102,
+              "status": "canceled"
+            }
+          ]
         ],
-        "expected": 1
+        "expected": [
+          101
+        ]
+      },
+      {
+        "input": [
+          [
+            {
+              "id": 201,
+              "status": "canceled"
+            }
+          ]
+        ],
+        "expected": []
+      },
+      {
+        "input": [
+          []
+        ],
+        "expected": []
+      }
+    ],
+    "edge_case_test": {
+      "input": [
+        [
+          {
+            "id": 1,
+            "status": "active"
+          },
+          {
+            "id": 2,
+            "status": "past_due"
+          }
+        ]
+      ],
+      "expected": [
+        1
+      ]
+    }
+  },
+  {
+    "id": "easy_parse_http_auth_header",
+    "title": "Parse HTTP Authorization Header",
+    "module_tag": "Module: SecurityAuth",
+    "difficulty": "easy",
+    "base_points": 30,
+    "function_name": "extract_bearer_token",
+    "task_description": "Extracts the bearer token string from an HTTP Authorization header value. Header format is 'Bearer <token>'. The prefix matching should be case-insensitive ('Bearer ' or 'bearer ') and strip any leading/trailing whitespace around the token. Returns None if header is empty or missing the bearer prefix.",
+    "code": "def extract_bearer_token(header_val):\n    if not header_val or len(header_val) < 8:\n        return None\n    scheme = header_val[:7]\n    token = header_val[7:]\n    if scheme != 'Bearer ':\n        return None\n    return token.strip()",
+    "num_lines": 8,
+    "bug_type": "off_by_one",
+    "buggy_line_number": 6,
+    "flawed_assumption": "Authorization header scheme always uses title-case 'Bearer ' without case variation",
+    "correct_line": "    if scheme.lower() != 'bearer ':",
+    "examples": [
+      {
+        "input": [
+          "Bearer eyJhbGciOi..."
+        ],
+        "expected": "eyJhbGciOi...",
+        "observed": "eyJhbGciOi...",
+        "explanation": "Standard title-case header parses cleanly."
+      },
+      {
+        "input": [
+          "bearer secret_token_123"
+        ],
+        "expected": "secret_token_123",
+        "observed": null,
+        "explanation": "RFC specifications allow case-insensitive scheme matching, but scheme != 'Bearer ' rejected lowercase."
+      }
+    ],
+    "constraints": [
+      "header_val is str or None",
+      "Returns extracted token string or None"
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "penalty": 5,
+        "title": "Mental Tracing Nudge",
+        "text": "What happens if a client or API gateway sends `bearer eyJ...` with a lowercase 'b'?"
+      },
+      {
+        "level": 2,
+        "penalty": 10,
+        "title": "Target Invariant",
+        "text": "HTTP auth scheme names are case-insensitive. Normalize case before checking the scheme prefix."
+      },
+      {
+        "level": 3,
+        "penalty": 10,
+        "title": "Surgical Logic Clue",
+        "text": "Use `.lower()` in the check: `if scheme.lower() != 'bearer ':`."
+      }
+    ],
+    "passing_tests": [
+      {
+        "input": [
+          "Bearer secret_jwt_token_123"
+        ],
+        "expected": "secret_jwt_token_123"
+      },
+      {
+        "input": [
+          "Basic user:pass"
+        ],
+        "expected": null
+      },
+      {
+        "input": [
+          ""
+        ],
+        "expected": null
+      }
+    ],
+    "edge_case_test": {
+      "input": [
+        "bearer secret_jwt_token_123"
+      ],
+      "expected": "secret_jwt_token_123"
+    }
+  },
+  {
+    "id": "med_shallow_copy_config",
+    "title": "Clone Configuration Without Mutating Base",
+    "module_tag": "Module: InfrastructureConfig",
+    "difficulty": "medium",
+    "base_points": 50,
+    "function_name": "get_user_config",
+    "task_description": "Generates a customized configuration by applying override_theme to a nested settings object. Returns a list: [user_theme, base_theme]. The base default configuration must NOT be mutated in memory.",
+    "code": "def get_user_config(override_theme):\n    import copy\n    base_config = {'app': 'portal', 'settings': {'theme': 'dark', 'fontSize': 14}}\n    user_config = base_config.copy()\n    user_config['settings']['theme'] = override_theme\n    return [user_config['settings']['theme'], base_config['settings']['theme']]",
+    "num_lines": 6,
+    "bug_type": "shallow_copy",
+    "buggy_line_number": 4,
+    "flawed_assumption": "dict.copy() performs a deep copy of nested dictionaries",
+    "correct_line": "    user_config = copy.deepcopy(base_config)",
+    "examples": [
+      {
+        "input": [
+          "dark"
+        ],
+        "expected": [
+          "dark",
+          "dark"
+        ],
+        "observed": [
+          "dark",
+          "dark"
+        ],
+        "explanation": "When overriding with the same default theme, mutation is hidden."
+      },
+      {
+        "input": [
+          "light"
+        ],
+        "expected": [
+          "light",
+          "dark"
+        ],
+        "observed": [
+          "light",
+          "light"
+        ],
+        "explanation": "Shallow copy base_config.copy() shares the inner 'settings' dict in memory, corrupting base_config to 'light'."
+      }
+    ],
+    "constraints": [
+      "base_config must retain its original default theme 'dark'",
+      "Returns [user_theme, base_theme]"
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "penalty": 8,
+        "title": "Mental Tracing Nudge",
+        "text": "What happens to `base_config['settings']` when modifying `user_config['settings']['theme']`?"
+      },
+      {
+        "level": 2,
+        "penalty": 15,
+        "title": "Target Invariant",
+        "text": "dict.copy() creates a shallow clone. Nested dictionaries remain shared references."
+      },
+      {
+        "level": 3,
+        "penalty": 15,
+        "title": "Surgical Logic Clue",
+        "text": "Use deepcopy on line 4: `user_config = copy.deepcopy(base_config)`."
+      }
+    ],
+    "passing_tests": [
+      {
+        "input": [
+          "dark"
+        ],
+        "expected": [
+          "dark",
+          "dark"
+        ]
+      }
+    ],
+    "edge_case_test": {
+      "input": [
+        "light"
+      ],
+      "expected": [
+        "light",
+        "dark"
+      ]
+    }
+  },
+  {
+    "id": "med_sliding_window_rate_limiter",
+    "title": "Sliding Window Rate Limiter",
+    "module_tag": "Module: APISecurity",
+    "difficulty": "medium",
+    "base_points": 50,
+    "function_name": "is_request_allowed",
+    "task_description": "Implements a sliding log rate limiter: given a list of previous request timestamps (in seconds), current_time, window_size (seconds), and max_requests. Drops all timestamps older than current_time - window_size. Returns True if current request is within max_requests limit, False otherwise.",
+    "code": "def is_request_allowed(history, current_time, window_size=60, max_requests=3):\n    cutoff = current_time - window_size\n    valid_timestamps = [t for t in history if t > cutoff]\n    if len(valid_timestamps) > max_requests:\n        return False\n    return True",
+    "num_lines": 6,
+    "bug_type": "boundary_inclusive",
+    "buggy_line_number": 4,
+    "flawed_assumption": "Allows requests when count exceeds limit because > max_requests permits max_requests + 1 total requests",
+    "correct_line": "    if len(valid_timestamps) >= max_requests:",
+    "examples": [
+      {
+        "input": [
+          [
+            10,
+            20
+          ],
+          30,
+          60,
+          3
+        ],
+        "expected": true,
+        "observed": true,
+        "explanation": "2 previous requests + 1 new request = 3 total, within limit of 3."
       },
       {
         "input": [
           [
             10,
             20,
-            30,
-            40
+            25
           ],
-          10
+          30,
+          60,
+          3
         ],
-        "expected": 0
+        "expected": false,
+        "observed": true,
+        "explanation": "There are already 3 active requests in the window. The new request should be rejected, but len > 3 allows the 4th request."
+      }
+    ],
+    "constraints": [
+      "history is a list of numeric timestamps in ascending order",
+      "Returns bool True or False"
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "penalty": 8,
+        "title": "Mental Tracing Nudge",
+        "text": "If max_requests is 3, and there are already 3 timestamps in valid_timestamps, should a 4th request be allowed?"
+      },
+      {
+        "level": 2,
+        "penalty": 15,
+        "title": "Target Invariant",
+        "text": "Checking `len(valid_timestamps) > max_requests` allows the limit to be breached by 1 before triggering rate limit."
+      },
+      {
+        "level": 3,
+        "penalty": 15,
+        "title": "Surgical Logic Clue",
+        "text": "On line 4, use `>=` to reject incoming requests once capacity is reached: `if len(valid_timestamps) >= max_requests:`."
+      }
+    ],
+    "passing_tests": [
+      {
+        "input": [
+          [
+            10
+          ],
+          30,
+          60,
+          3
+        ],
+        "expected": true
       },
       {
         "input": [
           [
+            5,
             10,
-            20,
-            30,
-            40
+            15,
+            20
           ],
-          99
+          30,
+          60,
+          3
         ],
-        "expected": -1
+        "expected": false
+      },
+      {
+        "input": [
+          [],
+          30,
+          60,
+          3
+        ],
+        "expected": true
       }
     ],
     "edge_case_test": {
@@ -277,45 +869,386 @@
         [
           10,
           20,
-          30,
-          40
+          25
         ],
-        40
+        30,
+        60,
+        3
       ],
-      "expected": 3
-    },
-    "correct_line": "    for idx in range(n):"
+      "expected": false
+    }
   },
   {
-    "id": "ch_int_division_avg_rating",
-    "task_description": "Calculates the average rating from a list of integer ratings (1 to 5), returning the float average rounded to 2 decimal places. Returns 0.0 for an empty list.",
-    "function_name": "calculate_average_rating",
-    "code": "def calculate_average_rating(ratings):\n    if not isinstance(ratings, list):\n        return 0.0\n    count = len(ratings)\n    if count == 0:\n        return 0.0\n    total_score = sum(ratings)\n    average = total_score // count\n    return round(float(average), 2)",
-    "num_lines": 9,
-    "bug_type": "int_division",
-    "buggy_line_number": 8,
-    "flawed_assumption": "Integer division (//) preserves precision or truncation before rounding yields expected results",
-    "passing_tests": [
+    "id": "med_prune_expired_sessions",
+    "title": "Prune Expired User Sessions",
+    "module_tag": "Module: SessionStore",
+    "difficulty": "medium",
+    "base_points": 50,
+    "function_name": "prune_expired_sessions",
+    "task_description": "Removes expired session dictionaries from a list of sessions in-place where session['expires_at'] < current_time. Returns the cleaned list of sessions containing only active sessions.",
+    "code": "def prune_expired_sessions(sessions, current_time):\n    for session in sessions:\n        if session.get('expires_at', 0) < current_time:\n            sessions.remove(session)\n    return sessions",
+    "num_lines": 5,
+    "bug_type": "iteration_mutation",
+    "buggy_line_number": 2,
+    "flawed_assumption": "Mutating a list while iterating over it with a for-in loop visits all elements",
+    "correct_line": "    for session in list(sessions):",
+    "examples": [
       {
         "input": [
           [
-            4,
-            4,
-            4,
-            4
-          ]
+            {
+              "id": 1,
+              "expires_at": 100
+            },
+            {
+              "id": 2,
+              "expires_at": 200
+            }
+          ],
+          50
         ],
-        "expected": 4.0
+        "expected": [
+          {
+            "id": 1,
+            "expires_at": 100
+          },
+          {
+            "id": 2,
+            "expires_at": 200
+          }
+        ],
+        "observed": [
+          {
+            "id": 1,
+            "expires_at": 100
+          },
+          {
+            "id": 2,
+            "expires_at": 200
+          }
+        ],
+        "explanation": "Neither session is expired, so no removals occur."
       },
       {
         "input": [
           [
-            5,
-            5,
-            5
+            {
+              "id": 1,
+              "expires_at": 10
+            },
+            {
+              "id": 2,
+              "expires_at": 20
+            },
+            {
+              "id": 3,
+              "expires_at": 100
+            }
+          ],
+          50
+        ],
+        "expected": [
+          {
+            "id": 3,
+            "expires_at": 100
+          }
+        ],
+        "observed": [
+          {
+            "id": 2,
+            "expires_at": 20
+          },
+          {
+            "id": 3,
+            "expires_at": 100
+          }
+        ],
+        "explanation": "Removing id:1 shifts id:2 into index 0. The loop advances to index 1, completely skipping id:2!"
+      }
+    ],
+    "constraints": [
+      "All sessions with expires_at < current_time must be purged",
+      "Returns cleaned list of active sessions"
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "penalty": 8,
+        "title": "Mental Tracing Nudge",
+        "text": "When `sessions.remove()` deletes an item at index 0, what index does the next item shift into?"
+      },
+      {
+        "level": 2,
+        "penalty": 15,
+        "title": "Target Invariant",
+        "text": "Mutating a list while iterating over it causes the iterator index to skip elements following a removal."
+      },
+      {
+        "level": 3,
+        "penalty": 15,
+        "title": "Surgical Logic Clue",
+        "text": "Iterate over a shallow snapshot copy on line 2: `for session in list(sessions):`."
+      }
+    ],
+    "passing_tests": [
+      {
+        "input": [
+          [
+            {
+              "id": 1,
+              "expires_at": 100
+            },
+            {
+              "id": 2,
+              "expires_at": 200
+            }
+          ],
+          50
+        ],
+        "expected": [
+          {
+            "id": 1,
+            "expires_at": 100
+          },
+          {
+            "id": 2,
+            "expires_at": 200
+          }
+        ]
+      },
+      {
+        "input": [
+          [
+            {
+              "id": 1,
+              "expires_at": 10
+            }
+          ],
+          50
+        ],
+        "expected": []
+      },
+      {
+        "input": [
+          [],
+          50
+        ],
+        "expected": []
+      }
+    ],
+    "edge_case_test": {
+      "input": [
+        [
+          {
+            "id": 1,
+            "expires_at": 10
+          },
+          {
+            "id": 2,
+            "expires_at": 20
+          },
+          {
+            "id": 3,
+            "expires_at": 100
+          }
+        ],
+        50
+      ],
+      "expected": [
+        {
+          "id": 3,
+          "expires_at": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "med_resolve_json_path",
+    "title": "Resolve Deep JSON Property Pointer",
+    "module_tag": "Module: GatewayRouter",
+    "difficulty": "medium",
+    "base_points": 50,
+    "function_name": "resolve_json_path",
+    "task_description": "Safely resolves a dot-delimited path (e.g. 'user.profile.name') against a nested dictionary data. Returns the targeted value if found, or None if any key along the path is missing or if an intermediate property is not a dictionary.",
+    "code": "def resolve_json_path(data, path):\n    keys = path.split('.')\n    current = data\n    for key in keys:\n        if key not in current:\n            return None\n        current = current[key]\n    return current",
+    "num_lines": 8,
+    "bug_type": "type_coercion",
+    "buggy_line_number": 5,
+    "flawed_assumption": "Intermediate properties in the traversal path are always dictionaries",
+    "correct_line": "        if not isinstance(current, dict) or key not in current:",
+    "examples": [
+      {
+        "input": [
+          {
+            "user": {
+              "name": "Alice"
+            }
+          },
+          "user.name"
+        ],
+        "expected": "Alice",
+        "observed": "Alice",
+        "explanation": "Valid nested path resolves cleanly."
+      },
+      {
+        "input": [
+          {
+            "user": null
+          },
+          "user.profile.avatar"
+        ],
+        "expected": null,
+        "observed": "TypeError: argument of type 'NoneType' is not iterable",
+        "explanation": "When data['user'] is None, 'key not in current' crashes because current is None."
+      }
+    ],
+    "constraints": [
+      "path is a dot-separated string",
+      "Must handle None or primitive intermediate values gracefully without crashing"
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "penalty": 8,
+        "title": "Mental Tracing Nudge",
+        "text": "What happens when `current` is set to `None` and the next iteration runs `if key not in current:`?"
+      },
+      {
+        "level": 2,
+        "penalty": 15,
+        "title": "Target Invariant",
+        "text": "The `in` operator raises a TypeError if the target is None. Verify that `current` is a dictionary before key inspection."
+      },
+      {
+        "level": 3,
+        "penalty": 15,
+        "title": "Surgical Logic Clue",
+        "text": "On line 5, check `if not isinstance(current, dict) or key not in current:`."
+      }
+    ],
+    "passing_tests": [
+      {
+        "input": [
+          {
+            "user": {
+              "name": "Alice"
+            }
+          },
+          "user.name"
+        ],
+        "expected": "Alice"
+      },
+      {
+        "input": [
+          {
+            "user": {
+              "name": "Bob"
+            }
+          },
+          "user.age"
+        ],
+        "expected": null
+      },
+      {
+        "input": [
+          {},
+          "profile"
+        ],
+        "expected": null
+      }
+    ],
+    "edge_case_test": {
+      "input": [
+        {
+          "user": null
+        },
+        "user.profile.avatar"
+      ],
+      "expected": null
+    }
+  },
+  {
+    "id": "med_compute_ledger_balance",
+    "title": "Compute Ledger Float Balance",
+    "module_tag": "Module: LedgerService",
+    "difficulty": "medium",
+    "base_points": 50,
+    "function_name": "compute_ledger_balance",
+    "task_description": "Calculates the total account balance by summing a list of credit/debit transaction amounts. Returns the net balance as a float rounded to 2 decimal places (cents), ensuring no IEEE-754 precision artifacts.",
+    "code": "def compute_ledger_balance(transactions):\n    balance = 0.0\n    for tx in transactions:\n        balance += tx\n    return balance",
+    "num_lines": 5,
+    "bug_type": "type_coercion",
+    "buggy_line_number": 5,
+    "flawed_assumption": "Native float accumulation produces exact decimal currency figures",
+    "correct_line": "    return round(balance, 2)",
+    "examples": [
+      {
+        "input": [
+          [
+            10.5,
+            20.25,
+            -5.0
           ]
         ],
-        "expected": 5.0
+        "expected": 25.75,
+        "observed": 25.75,
+        "explanation": "Simple binary fractions accumulate cleanly."
+      },
+      {
+        "input": [
+          [
+            0.1,
+            0.2
+          ]
+        ],
+        "expected": 0.3,
+        "observed": 0.30000000000000004,
+        "explanation": "Floating-point IEEE-754 binary representation of 0.1 and 0.2 produces precision loss."
+      }
+    ],
+    "constraints": [
+      "transactions is a list of floats",
+      "Returns float rounded to 2 decimal places"
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "penalty": 8,
+        "title": "Mental Tracing Nudge",
+        "text": "Evaluate `0.1 + 0.2` in Python. What is the exact floating point result?"
+      },
+      {
+        "level": 2,
+        "penalty": 15,
+        "title": "Target Invariant",
+        "text": "Financial calculations require decimal precision. Raw float addition leaves binary representation artifacts."
+      },
+      {
+        "level": 3,
+        "penalty": 15,
+        "title": "Surgical Logic Clue",
+        "text": "Round the final balance to 2 decimal places on line 5: `return round(balance, 2)`."
+      }
+    ],
+    "passing_tests": [
+      {
+        "input": [
+          [
+            10.0,
+            20.0,
+            -5.0
+          ]
+        ],
+        "expected": 25.0
+      },
+      {
+        "input": [
+          [
+            100.5,
+            50.25
+          ]
+        ],
+        "expected": 150.75
       },
       {
         "input": [
@@ -327,107 +1260,112 @@
     "edge_case_test": {
       "input": [
         [
-          4,
-          5
+          0.1,
+          0.2
         ]
       ],
-      "expected": 4.5
-    },
-    "correct_line": "    average = total_score / count"
+      "expected": 0.3
+    }
   },
   {
-    "id": "ch_boundary_inclusive_gpa",
-    "task_description": "Determines if a student GPA qualifies for honor roll (GPA >= 3.5). Invalid GPAs outside [0.0, 4.0] return False.",
-    "function_name": "is_honor_roll",
-    "code": "def is_honor_roll(gpa):\n    if not isinstance(gpa, (int, float)):\n        return False\n    if gpa < 0.0 or gpa > 4.0:\n        return False\n    if gpa > 3.5:\n        return True\n    return False",
-    "num_lines": 8,
+    "id": "med_rate_limit_token_refill",
+    "title": "Token Bucket Refill Calculation",
+    "module_tag": "Module: TrafficShaper",
+    "difficulty": "medium",
+    "base_points": 50,
+    "function_name": "refill_tokens",
+    "task_description": "Calculates the new token count for a token bucket rate limiter: adds elapsed_seconds * refill_rate to current_tokens. The total tokens in the bucket must NEVER exceed bucket_capacity. Returns the integer count of available tokens.",
+    "code": "def refill_tokens(current_tokens, elapsed_seconds, refill_rate=2, bucket_capacity=10):\n    new_tokens = current_tokens + int(elapsed_seconds * refill_rate)\n    return new_tokens",
+    "num_lines": 3,
     "bug_type": "boundary_inclusive",
-    "buggy_line_number": 6,
-    "flawed_assumption": "A boundary threshold is strictly greater/less when it should include the boundary value (or vice versa)",
-    "passing_tests": [
+    "buggy_line_number": 3,
+    "flawed_assumption": "Token refill can accumulate indefinitely beyond bucket capacity",
+    "correct_line": "    return min(bucket_capacity, new_tokens)",
+    "examples": [
       {
         "input": [
-          3.8
-        ],
-        "expected": true
-      },
-      {
-        "input": [
-          2.9
-        ],
-        "expected": false
-      },
-      {
-        "input": [
-          4.5
-        ],
-        "expected": false
-      }
-    ],
-    "edge_case_test": {
-      "input": [
-        3.5
-      ],
-      "expected": true
-    },
-    "correct_line": "    if gpa >= 3.5:"
-  },
-  {
-    "id": "ch_off_by_one_adjacent_dups",
-    "task_description": "Counts the number of adjacent duplicate element pairs in a list. Returns 0 if the list has fewer than 2 elements.",
-    "function_name": "count_adjacent_duplicates",
-    "code": "def count_adjacent_duplicates(items):\n    if not isinstance(items, list):\n        raise TypeError(\"Input must be a list\")\n    n = len(items)\n    if n < 2:\n        return 0\n    duplicate_count = 0\n    for i in range(n - 2):\n        if items[i] == items[i + 1]:\n            duplicate_count += 1\n    return duplicate_count",
-    "num_lines": 12,
-    "bug_type": "off_by_one",
-    "buggy_line_number": 8,
-    "flawed_assumption": "range() covers the last element or boundary element",
-    "passing_tests": [
-      {
-        "input": [
-          [
-            1,
-            1,
-            2,
-            3
-          ]
-        ],
-        "expected": 1
-      },
-      {
-        "input": [
-          [
-            5,
-            5,
-            5,
-            2,
-            1
-          ]
-        ],
-        "expected": 2
-      },
-      {
-        "input": [
-          [
-            1,
-            2,
-            3,
-            4
-          ]
-        ],
-        "expected": 0
-      }
-    ],
-    "edge_case_test": {
-      "input": [
-        [
-          1,
           2,
           3,
-          3
-        ]
+          2,
+          10
+        ],
+        "expected": 8,
+        "observed": 8,
+        "explanation": "2 + (3 * 2) = 8, which is <= 10 capacity."
+      },
+      {
+        "input": [
+          5,
+          10,
+          2,
+          10
+        ],
+        "expected": 10,
+        "observed": 25,
+        "explanation": "5 + (10 * 2) = 25 tokens. Without a capacity cap, users accumulate 25 tokens and can bypass burst limits."
+      }
+    ],
+    "constraints": [
+      "Returns integer <= bucket_capacity",
+      "current_tokens >= 0"
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "penalty": 8,
+        "title": "Mental Tracing Nudge",
+        "text": "What happens if a user is idle for 1 hour? How many tokens do they accumulate?"
+      },
+      {
+        "level": 2,
+        "penalty": 15,
+        "title": "Target Invariant",
+        "text": "A token bucket has a fixed maximum burst capacity. Excess refilled tokens must be discarded."
+      },
+      {
+        "level": 3,
+        "penalty": 15,
+        "title": "Surgical Logic Clue",
+        "text": "Clamp the returned tokens on line 3: `return min(bucket_capacity, new_tokens)`."
+      }
+    ],
+    "passing_tests": [
+      {
+        "input": [
+          1,
+          2,
+          2,
+          10
+        ],
+        "expected": 5
+      },
+      {
+        "input": [
+          0,
+          4,
+          1,
+          10
+        ],
+        "expected": 4
+      },
+      {
+        "input": [
+          5,
+          0,
+          2,
+          10
+        ],
+        "expected": 5
+      }
+    ],
+    "edge_case_test": {
+      "input": [
+        5,
+        10,
+        2,
+        10
       ],
-      "expected": 1
-    },
-    "correct_line": "    for i in range(n - 1):"
+      "expected": 10
+    }
   }
 ]

@@ -7,7 +7,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2.1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css" />
+  <link rel="stylesheet" href="style.css?v=4.3" />
 </head>
 <body>
   <div class="workbench">
@@ -23,31 +25,31 @@
           </div>
           <div class="brand-info">
             <span class="brand-name">Reverse Code Arena</span>
-            <span class="brand-citation">Zhang (2026) &middot; Zhao et al. (2026)</span>
           </div>
         </div>
         <div class="topbar-divider"></div>
-        <div class="challenge-pill-group">
-          <span class="badge badge-difficulty" id="badge-difficulty" data-tooltip="Challenge difficulty tier based on fault complexity">Easy</span>
-          <span class="badge badge-bug" id="bug-type-badge" data-tooltip="Defect classification seeded in this verification challenge">Bug: Scanning...</span>
-          <span class="badge badge-bug" id="topbar-grit-badge" data-tooltip="Grit Tracker: Attempts made in Grind Mode without revealing the answer">Grit: 0 Retries</span>
-          <span class="badge badge-streak" id="topbar-streak-badge" data-tooltip="Session Streak: Consecutive verified challenges solved without error">🔥 Streak: 0</span>
+        <!-- View Switcher & Active Problem Pills -->
+        <div class="topbar-nav-group">
+          <button class="btn btn-tool topbar-nav-tab active" id="btn-nav-catalog" title="Browse Problems Catalog">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>Problems</span>
+          </button>
+        </div>
+
+        <div class="challenge-pill-group" id="topbar-challenge-pills" style="display: none;">
+          <button class="btn btn-tool btn-back-catalog" id="btn-back-to-catalog" title="Return to Problems Catalog">
+            <span>← Problems</span>
+          </button>
+          <span class="badge badge-difficulty badge-diff-easy" id="badge-difficulty" data-tooltip="Challenge difficulty tier based on fault complexity">Easy</span>
         </div>
       </div>
 
       <div class="topbar-right">
-        <!-- Challenge Category Selector (Adaptive / Manual) -->
-        <div class="category-select-wrapper" title="Select practice mode: Adaptive or specific bug category">
-          <select id="select-category" class="category-dropdown">
-            <option value="adaptive">🎯 Adaptive (Target Weakness)</option>
-            <option value="boundary_inclusive">Boundary (>= vs >)</option>
-            <option value="off_by_one">Off-By-One (Loops)</option>
-            <option value="int_division">Int Division (/ vs //)</option>
-            <option value="mutable_default">Mutable Default</option>
-            <option value="shallow_copy">Shallow Copy</option>
-          </select>
-        </div>
-
         <!-- Light / Dark Theme Mode Toggle -->
         <button class="btn btn-tool theme-toggle-btn" id="btn-theme-toggle" title="Toggle Light or Dark theme" aria-label="Toggle Theme">
           <svg id="theme-icon-dark" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -64,60 +66,183 @@
           <span id="theme-text">Light Mode</span>
         </button>
 
-        <!-- Session Controls -->
-        <button class="btn btn-tool" id="btn-topbar-reveal" title="End current exercise and inspect verified solution breakdown">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="15" y1="9" x2="9" y2="15"></line>
-            <line x1="9" y1="9" x2="15" y2="15"></line>
-          </svg>
-          <span>End Exercise</span>
-        </button>
-        <button class="btn btn-tool" id="btn-pause" title="Pause session to take a breath (freezes cognitive timers)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="6" y="4" width="4" height="16"></rect>
-            <rect x="14" y="4" width="4" height="16"></rect>
-          </svg>
-          <span>Pause</span>
-        </button>
-        <button class="btn btn-tool" id="btn-refresh" title="Load next verified challenge">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="23 4 23 10 17 10"></polyline>
-            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-          </svg>
-          <span>New Task</span>
-        </button>
-        <button class="btn btn-tool" id="btn-memory" title="View dynamic session memory report (memory.md)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"></path>
-            <line x1="9" y1="21" x2="15" y2="21"></line>
-          </svg>
-          <span>Memory</span>
-        </button>
-        <button class="btn btn-tool" id="btn-stats" title="View Verification and Security Audit Stats">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="20" x2="18" y2="10"></line>
-            <line x1="12" y1="20" x2="12" y2="4"></line>
-            <line x1="6" y1="20" x2="6" y2="14"></line>
-          </svg>
-          <span>Stats</span>
-        </button>
-
-        <div class="topbar-divider"></div>
-        <div class="status-indicator" id="server-status" title="Backend API status">
-          <span class="status-dot"></span>
-          <span class="status-text">Connected</span>
+        <!-- Session Controls (Active only in Workspace View) -->
+        <div class="workspace-session-controls" id="workspace-session-controls" style="display: none;">
+          <button class="btn btn-tool" id="btn-pause" title="Pause session to take a breath (freezes cognitive timers)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+            <span>Pause</span>
+          </button>
+          <button class="btn btn-tool" id="btn-topbar-reveal" title="End current exercise and inspect verified solution breakdown">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="15" y1="9" x2="9" y2="15"></line>
+              <line x1="9" y1="9" x2="15" y2="15"></line>
+            </svg>
+            <span>End Exercise</span>
+          </button>
         </div>
       </div>
     </header>
 
+    <!-- LeetCode-Style Problems Catalog View -->
+    <div class="catalog-view" id="catalog-view">
+      <div class="catalog-container">
+        <!-- Top Hero Card with User Summary & Points -->
+        <section class="catalog-hero-card">
+          <div class="catalog-hero-left">
+            <div class="catalog-hero-avatar-wrap">
+              <div class="catalog-avatar-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </div>
+            </div>
+            <div class="catalog-hero-info">
+              <h2 class="catalog-greeting">Problems Catalog</h2>
+              <div class="catalog-user-meta" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem; flex-wrap: wrap;">
+                <p class="catalog-user-welcome" style="margin: 0;">Account: <strong id="catalog-username-val">Guest</strong> &middot; Track and conquer real-world codebase defects</p>
+                <button class="btn btn-tool btn-catalog-auth" id="btn-catalog-auth" title="Switch or log in user" style="padding: 0.2rem 0.6rem; font-size: 0.72rem;">Switch User</button>
+                <button class="btn btn-tool btn-catalog-logout" id="btn-catalog-logout" title="Log out" style="padding: 0.2rem 0.6rem; font-size: 0.72rem; display: none;">Exit</button>
+              </div>
+            </div>
+          </div>
+          <div class="catalog-hero-stats">
+            <div class="catalog-hero-stat-card">
+              <span class="catalog-stat-label">Total Solved</span>
+              <div class="catalog-stat-metric">
+                <span class="catalog-stat-num" id="catalog-stat-solved">0</span>
+                <span class="catalog-stat-slash">/</span>
+                <span class="catalog-stat-total" id="catalog-stat-total">12</span>
+              </div>
+              <div class="catalog-stat-bar-track">
+                <div class="catalog-stat-bar-fill" id="catalog-progress-fill" style="width: 0%;"></div>
+              </div>
+            </div>
+            <div class="catalog-hero-stat-card">
+              <span class="catalog-stat-label">Total Score</span>
+              <div class="catalog-stat-metric">
+                <span class="catalog-points-num" id="catalog-stat-points">0</span>
+                <span class="catalog-points-unit">pts</span>
+              </div>
+              <span class="catalog-stat-sub">Verified Solutions</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Multi-Select Filters & Search Card -->
+        <section class="catalog-controls-card">
+          <!-- Row 1: Search + Status + Reset -->
+          <div class="catalog-search-row">
+            <div class="catalog-search-box">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="catalog-search-input" placeholder="Search problems by title, module, or keyword..." autocomplete="off" />
+              <button id="btn-catalog-clear-search" class="catalog-clear-btn" title="Clear search" style="display: none;">&times;</button>
+            </div>
+
+            <!-- Status Filter Pills -->
+            <div class="catalog-status-filter" id="catalog-status-filter">
+              <button class="status-chip active" data-status="all">All</button>
+              <button class="status-chip" data-status="unsolved">Unsolved</button>
+              <button class="status-chip" data-status="solved">Solved</button>
+            </div>
+
+            <button id="btn-catalog-reset-filters" class="btn btn-tool" title="Reset all active filters">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+              </svg>
+              <span>Reset</span>
+            </button>
+          </div>
+
+          <!-- Row 2: Multi-Select Filter Rows -->
+          <div class="catalog-filter-sections">
+            <!-- Difficulty Multi-select -->
+            <div class="catalog-filter-group">
+              <span class="catalog-filter-heading">Difficulty:</span>
+              <div class="catalog-chips-list" id="filter-difficulty-chips">
+                <button class="multi-chip active" data-diff="easy">Easy (30 pts)</button>
+                <button class="multi-chip active" data-diff="medium">Medium (50 pts)</button>
+                <button class="multi-chip active" data-diff="hard">Hard (80 pts)</button>
+              </div>
+            </div>
+
+            <!-- Language Multi-select -->
+            <div class="catalog-filter-group">
+              <span class="catalog-filter-heading">Language:</span>
+              <div class="catalog-chips-list" id="filter-language-chips">
+                <button class="multi-chip active" data-lang="python">Python</button>
+                <button class="multi-chip" data-lang="c++">C++</button>
+                <button class="multi-chip" data-lang="java">Java</button>
+                <button class="multi-chip" data-lang="javascript">TypeScript</button>
+                <button class="multi-chip" data-lang="go">Go</button>
+              </div>
+            </div>
+
+            <!-- Topic / Module Multi-select -->
+            <div class="catalog-filter-group catalog-topic-group">
+              <span class="catalog-filter-heading">Topics:</span>
+              <div class="catalog-chips-list catalog-topics-scroll" id="filter-topic-chips">
+                <!-- Populated dynamically from API catalog available_topics -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Problem Table Container -->
+        <section class="catalog-table-card">
+          <div class="catalog-table-top-info">
+            <span class="catalog-table-counter">Showing <strong id="catalog-visible-count">0</strong> of <strong id="catalog-total-count">0</strong> problems</span>
+          </div>
+
+          <div class="catalog-table-responsive">
+            <table class="catalog-table">
+              <thead>
+                <tr>
+                  <th style="width: 140px;">Status</th>
+                  <th>Title &amp; Module</th>
+                  <th style="width: 140px;">Difficulty</th>
+                  <th style="width: 100px;">Points</th>
+                  <th style="width: 110px;">Language</th>
+                  <th style="width: 140px; text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="catalog-table-body">
+                <!-- Dynamically populated rows -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty State (No matching problems) -->
+          <div class="catalog-empty-state" id="catalog-empty-state" style="display: none;">
+            <div class="empty-state-symbol">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </div>
+            <h4 class="empty-state-title">No problems match your filters</h4>
+            <p class="empty-state-desc">None of the available problems match your active combination of difficulty, language, and topic filters.</p>
+            <button class="btn btn-primary" id="btn-empty-reset-filters">Reset All Filters</button>
+          </div>
+        </section>
+      </div>
+    </div>
+
     <!-- Main Workspace (2-Column IDE Split) -->
-    <main class="workspace-main" id="workspace-main">
+    <main class="workspace-main" id="workspace-main" style="display: none;">
       <!-- Left Pane: Tabbed Problem Spec, Unit Tests & Strategy Guide (38% width) -->
       <aside class="pane pane-left" id="pane-left">
-        <!-- Tab Navigation Bar -->
+        <!-- Tab Navigation Bar (3 Clean Tabs) -->
         <nav class="tab-nav" role="tablist">
-          <button class="tab-btn active" data-tab="tab-spec" role="tab" id="tab-btn-spec" aria-selected="true" data-tooltip="Formal contract & problem description">
+          <button class="tab-btn active" data-tab="tab-spec" role="tab" id="tab-btn-spec" aria-selected="true" data-tooltip="Formal problem description, examples & constraints">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <polyline points="14 2 14 8 20 8"></polyline>
@@ -127,90 +252,160 @@
             </svg>
             <span>Specification</span>
           </button>
-          <button class="tab-btn" data-tab="tab-tests" role="tab" id="tab-btn-tests" aria-selected="false" data-tooltip="Passing suite inputs & expected returns">
+          <button class="tab-btn" data-tab="tab-hints" role="tab" id="tab-btn-hints" aria-selected="false" data-tooltip="Progressive clues with point deductions">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="9 11 12 14 22 4"></polyline>
-              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+              <path d="M9 18h6"></path>
+              <path d="M10 22h4"></path>
+              <path d="M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4.5 3 6h8c1.5-1.5 3-3.5 3-6a7 7 0 0 0-7-7z"></path>
             </svg>
-            <span>Unit Tests <span id="test-count-badge" class="selection-pill" style="padding: 0.1rem 0.4rem; font-size: 0.68rem;">3</span></span>
+            <span>Hints <span id="hints-count-badge" class="selection-pill" style="padding: 0.1rem 0.45rem; font-size: 0.68rem;">0/3</span></span>
           </button>
-          <button class="tab-btn" data-tab="tab-guide" role="tab" id="tab-btn-guide" aria-selected="false" data-tooltip="Zhang (2026) G4 concrete tracing protocol">
+          <button class="tab-btn" data-tab="tab-console" role="tab" id="tab-btn-console" aria-selected="false" data-tooltip="Interactive Terminal & Test Runner powered by Pyodide">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              <polyline points="4 17 10 11 4 5"></polyline>
+              <line x1="12" y1="19" x2="20" y2="19"></line>
             </svg>
-            <span>Strategy Guide</span>
+            <span>Terminal / Tests</span>
           </button>
         </nav>
 
         <div class="tab-content-container">
-          <!-- Tab 1: Specification -->
+          <!-- Tab 1: Problem Specification (LeetCode Style) -->
           <div class="tab-pane active" id="tab-spec" role="tabpanel">
-            <div class="spec-box">
-              <div class="spec-header">
-                <span class="section-label" data-tooltip="Target function signature and parameters">Function Contract</span>
-                <span class="badge badge-bug" id="spec-bug-badge" data-tooltip="Target defect category seeded in this challenge">Defect Class</span>
+            <div class="spec-scroll-container">
+              <!-- Header with Module/Service & Difficulty Pill -->
+              <div class="spec-header-card">
+                <div class="spec-header-left">
+                  <span class="spec-module-tag" id="spec-module-tag">Module: PaymentEngine</span>
+                  <h2 class="spec-challenge-title" id="spec-challenge-title">Process Transaction</h2>
+                </div>
+                <div class="spec-header-right">
+                  <span class="badge badge-difficulty badge-diff-easy" id="spec-difficulty-badge">Easy (30 pts)</span>
+                </div>
               </div>
-              <div class="function-signature-box">
-                <code class="function-sig" id="function-name">find_max(...)</code>
+
+              <!-- Target Function Contract -->
+              <div class="spec-block">
+                <div class="spec-block-title">Function Signature</div>
+                <div class="function-signature-box">
+                  <code class="function-sig" id="function-name">find_max(...)</code>
+                </div>
               </div>
-              <p class="task-description-text" id="task-desc">
-                Loading challenge specification...
-              </p>
+
+              <!-- Problem Statement -->
+              <div class="spec-block">
+                <div class="spec-block-title">Problem Statement</div>
+                <div class="spec-description-body" id="task-desc">
+                  Loading challenge specification...
+                </div>
+              </div>
+
+              <!-- Structured Examples -->
+              <div class="spec-block">
+                <div class="spec-block-title">Examples & Bug Contrast</div>
+                <div class="spec-examples-container" id="spec-examples-container">
+                  <!-- Dynamic example cards injected here -->
+                </div>
+              </div>
+
+              <!-- Technical Constraints & Guarantees -->
+              <div class="spec-block">
+                <div class="spec-block-title">Constraints & Invariants</div>
+                <ul class="spec-constraints-container" id="spec-constraints-container">
+                  <!-- Dynamic constraints injected here -->
+                </ul>
+              </div>
             </div>
           </div>
 
-          <!-- Tab 2: Passing Unit Tests -->
-          <div class="tab-pane" id="tab-tests" role="tabpanel">
-            <div class="test-table-container">
-              <div style="padding: 0.85rem 1rem 0.5rem 1rem;">
-                <span class="section-label" data-tooltip="Baseline test suite validated against correct implementation">Passing Baseline Tests</span>
-                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem;">
-                  ℹ️ <strong>Why all PASS?</strong> The buggy code passes these 3 basic inputs. Your job is to find the hidden edge case where it breaks.
-                </p>
+          <!-- Tab 2: Progressive Hints System -->
+          <div class="tab-pane" id="tab-hints" role="tabpanel">
+            <div class="hints-scroll-container">
+              <!-- Hints Summary Banner -->
+              <div class="hints-summary-card">
+                <div class="hints-summary-left">
+                  <div class="hints-summary-title">Progressive Clue Ladder</div>
+                  <p class="hints-summary-note">
+                    Unlocking hints deducts points from this problem's final reward.
+                  </p>
+                </div>
+                <div class="hints-potential-box">
+                  <span class="hints-potential-label">Potential Points</span>
+                  <span class="hints-potential-val" id="hints-potential-val">30 pts</span>
+                </div>
               </div>
-              <table class="test-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Input Arguments</th>
-                    <th>Expected Output</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="test-table-body">
-                  <tr>
-                    <td colspan="4" class="text-center text-muted">Loading unit tests...</td>
-                  </tr>
-                </tbody>
-              </table>
+
+              <!-- Unlock Next Hint CTA -->
+              <div class="hints-unlock-bar">
+                <button type="button" class="btn btn-primary btn-unlock-action" id="btn-unlock-hint">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 18h6"></path>
+                    <path d="M10 22h4"></path>
+                    <path d="M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4.5 3 6h8c1.5-1.5 3-3.5 3-6a7 7 0 0 0-7-7z"></path>
+                  </svg>
+                  <span id="btn-unlock-hint-text">Unlock Hint 1 (-5 pts)</span>
+                </button>
+              </div>
+
+              <!-- Progressive Hint List -->
+              <div class="hints-list" id="hints-list-container">
+                <!-- Hint cards (locked/unlocked) injected dynamically -->
+              </div>
             </div>
           </div>
 
-          <!-- Tab 3: Strategy Guide (Zhang 2026 G4 Systematic Tracing) -->
-          <div class="tab-pane" id="tab-guide" role="tabpanel">
-            <div class="strategy-card">
-              <div class="section-label" data-tooltip="Empirical findings from computing education research (Zhang, WSU 2026)">
-                G4 Tracing Methodology
+          <!-- Tab 4: Interactive Terminal & Pyodide Test Runner -->
+          <div class="tab-pane" id="tab-console" role="tabpanel">
+            <div class="console-runner-container">
+              <!-- Custom Input Sandbox Card -->
+              <div class="runner-card">
+                <div class="runner-card-header">
+                  <span class="section-label" data-tooltip="Test function with custom arguments">Custom Input Sandbox</span>
+                  <span class="runner-status-pill" id="pyodide-status-pill">Pyodide: Initializing...</span>
+                </div>
+                <div class="custom-input-row">
+                  <input type="text" id="input-custom-args" class="code-input custom-input-field" placeholder="e.g. [-5, -2, -10] or 10, True" title="Arguments passed into function" />
+                  <button type="button" class="btn btn-primary btn-sm" id="btn-run-custom" title="Execute current editor code with custom arguments">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <span>Run Input</span>
+                  </button>
+                </div>
               </div>
-              <p style="font-size: 0.84rem; color: var(--text-secondary); line-height: 1.5;">
-                Research shows 42.1% of novices fail by repeatedly re-reading without a structured hypothesis. Follow the three-step systematic tracing protocol:
-              </p>
-              <ol class="strategy-steps">
-                <li>
-                  <strong>1. Anchor at Entry Point:</strong>
-                  <span>Pick the first passing unit test input and track variable states line-by-line from invocation.</span>
-                </li>
-                <li>
-                  <strong>2. Formulate Mental Model Discrepancy:</strong>
-                  <span>Contrast what the author assumed would happen against how Python language semantics actually evaluate the boundary case.</span>
-                </li>
-                <li>
-                  <strong>3. Verify Minimal Fix:</strong>
-                  <span>Compose a single-line correction that repairs the edge case without regressing baseline test behavior.</span>
-                </li>
-              </ol>
+
+              <!-- Suite Runner Actions -->
+              <div class="runner-actions-row">
+                <button type="button" class="btn btn-tool" id="btn-run-all-tests" title="Execute all challenge unit tests through Pyodide WebAssembly">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                  </svg>
+                  <span>Run Challenge Tests</span>
+                </button>
+                <button type="button" class="btn btn-tool" id="btn-clear-terminal" title="Clear terminal screen">
+                  <span>Clear Screen</span>
+                </button>
+              </div>
+
+              <!-- Live Test Result Table -->
+              <div class="runner-test-results" id="runner-test-results" style="display: none;">
+                <div class="runner-card-header" style="margin-bottom: 0.35rem;">
+                  <span class="section-label">Test Suite Execution</span>
+                  <span class="selection-pill" id="runner-tests-badge">0/0 Passed</span>
+                </div>
+                <div id="runner-test-list" class="runner-test-list"></div>
+              </div>
+
+              <!-- Terminal Output Screen -->
+              <div class="terminal-screen-wrapper">
+                <div class="terminal-titlebar">
+                  <div class="terminal-dots">
+                    <span class="terminal-dot red"></span>
+                    <span class="terminal-dot yellow"></span>
+                    <span class="terminal-dot green"></span>
+                  </div>
+                  <span class="terminal-title">Python 3.12 (Pyodide Wasm Sandbox)</span>
+                </div>
+                <pre class="terminal-screen" id="terminal-stdout">Click "Run Input" or "Run Challenge Tests" to execute the code in your browser.</pre>
+              </div>
             </div>
           </div>
         </div>
@@ -231,111 +426,52 @@
               <span class="tab-filename">solution.py</span>
             </div>
             <div class="editor-actions">
-              <span class="selection-pill" id="selected-indicator" data-tooltip="Click any line number or code statement in the inspector to target it">Click a line to locate fault</span>
+              <button type="button" class="btn btn-tool btn-xs" id="btn-editor-run" title="Run code with custom input">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                <span>Run</span>
+              </button>
+              <button type="button" class="btn btn-tool btn-xs" id="btn-editor-test" title="Test against all challenge test cases">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                <span>Test</span>
+              </button>
+              <button type="button" class="btn btn-tool btn-xs" id="btn-editor-reset" title="Reset code to original challenge snippet">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                <span>Reset</span>
+              </button>
+              <button type="button" class="btn btn-primary btn-xs btn-submit-code-fix" id="btn-editor-submit-fix" title="Directly submit your edited code fix for grading">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Submit Fix</span>
+              </button>
             </div>
           </div>
 
           <div class="code-viewport" id="code-container">
-            <div class="loading-state">
+            <div id="code-editor-mount" style="height: 100%; width: 100%;"></div>
+            <div class="loading-state" id="editor-loading">
               <div class="spinner"></div>
-              <span>Preparing code inspector...</span>
+              <span>Preparing interactive CodeMirror editor...</span>
             </div>
           </div>
         </div>
 
-        <!-- Lower Section: Fault Diagnosis & Fix Console (Bottom Dock) -->
-        <div class="diagnosis-console">
-          <div class="console-header">
-            <div class="console-title" data-tooltip="Structured diagnostic inputs based on Zhang (2026) hypothesis-first schema" data-tooltip-pos="bottom">
-              Your Diagnosis &amp; Fix
-            </div>
-            <div class="console-selected-line" id="console-selected-banner">
-              Target: <span class="highlight-line-val" id="form-selected-line">No line selected</span>
-            </div>
+        <!-- Workbench Editor Bottom Action Bar -->
+        <div class="editor-bottom-bar" id="editor-bottom-bar">
+          <div class="editor-bottom-left">
+            <span class="shortcut-hint">
+              Shortcut: <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to submit fix
+            </span>
+            <span class="selection-pill" id="form-selected-line" style="display: none;">No line selected</span>
           </div>
-
-          <!-- Empty State when no line selected -->
-          <div class="console-empty-prompt" id="console-empty-state">
-            <div class="empty-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-              </svg>
-            </div>
-            <div class="empty-title">Select a line from the code above</div>
-            <div class="empty-subtitle">Click the line number or code statement where you believe the author made a flawed assumption.</div>
+          <div class="actions-group">
+            <button type="button" class="btn btn-secondary" id="btn-reset-form" title="Reset code to original snippet">Reset</button>
+            <button type="button" class="btn btn-primary btn-cta btn-submit-code-fix" id="btn-submit" title="Directly submit your edited code fix for grading">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Submit Code Fix</span>
+            </button>
           </div>
-
-          <!-- Active Form when line is selected -->
-          <form class="console-form" id="attempt-form" style="display: none;" onsubmit="return false;">
-            <div class="console-grid">
-              <!-- Left Sub-column: Hypothesis-First Scaffolding (Zhang Ch. 3) -->
-              <div class="console-col">
-                <div class="field-group">
-                  <label for="input-expected">
-                    <span class="field-title" data-tooltip="What the author intended this statement to compute" data-tooltip-pos="bottom">1. What should this line do?</span>
-                    <span class="field-desc">The intended behavior for this statement</span>
-                  </label>
-                  <input type="text" id="input-expected" class="text-input" placeholder="e.g. Loop through every item in the list" />
-                </div>
-
-                <div class="field-group">
-                  <label for="input-observed">
-                    <span class="field-title" data-tooltip="Runtime failure mode or boundary edge-case triggered by this line" data-tooltip-pos="bottom">2. What does it actually do wrong?</span>
-                    <span class="field-desc">The actual mistake or boundary failure</span>
-                  </label>
-                  <input type="text" id="input-observed" class="text-input" placeholder="e.g. It stops one item too early" />
-                </div>
-              </div>
-
-              <!-- Right Sub-column: Mental Model & Fix -->
-              <div class="console-col">
-                <div class="field-group">
-                  <label for="input-explanation">
-                    <span class="field-title" data-tooltip="The cognitive misconception or false rule assumed by the author" data-tooltip-pos="bottom">3. What did the programmer get wrong?</span>
-                    <span class="field-desc">The misconception or false assumption made</span>
-                  </label>
-                  <input type="text" id="input-explanation" class="text-input" placeholder="e.g. Assumed range(n-1) covers all items" />
-                </div>
-
-                <div class="field-group">
-                  <label for="input-fix">
-                    <span class="field-title" data-tooltip="Single-line replacement that will be dynamically substituted and verified" data-tooltip-pos="bottom">4. Your fix (single corrected line)</span>
-                    <span class="field-desc">Type or paste the corrected line here</span>
-                  </label>
-                  <input type="text" id="input-fix" class="code-input" placeholder="e.g. for i in range(len(arr)):" />
-                </div>
-              </div>
-            </div>
-
-            <!-- Console Action Bar -->
-            <div class="console-actions">
-              <div class="shortcut-hint">
-                Shortcut: <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to submit
-              </div>
-              <div class="actions-group">
-                <button type="button" class="btn btn-secondary" id="btn-reset-form">Reset</button>
-                <button type="button" class="btn btn-primary btn-cta" id="btn-submit">
-                  Submit Analysis & Verify Fix
-                </button>
-              </div>
-            </div>
-          </form>
         </div>
       </section>
     </main>
-
-    <!-- Bottom Status Footer -->
-    <footer class="workbench-footer">
-      <div class="footer-left">
-        <span>Reverse Code Arena &middot; Grounded in <em>Zhang (WSU, 2026)</em> &amp; <em>Zhao et al. (EPFL/UTokyo, 2026)</em></span>
-      </div>
-      <div class="footer-right">
-        <span class="footer-tag" data-tooltip="Isolated execution container with 5s timeout protection">Sandboxed Subprocess Execution</span>
-        <span class="footer-tag" data-tooltip="Zhao et al. anti-leakage Chain-of-Thought grading filter">Zero-Leakage Pedagogical CoT</span>
-      </div>
-    </footer>
   </div>
 
   <!-- ========================================================================
@@ -343,7 +479,7 @@
        ======================================================================== -->
 
   <!-- 1. Context-First Welcome Briefing Overlay -->
-  <div class="modal-backdrop" id="briefing-modal">
+  <div class="modal-backdrop" id="briefing-modal" style="display: none;">
     <div class="modal-card briefing-card">
       <div class="modal-header">
         <div class="briefing-badge">Briefing &middot; Reverse Code Arena</div>
@@ -416,15 +552,15 @@
         <h2 class="modal-title" id="verdict-title">Evaluation Verdict</h2>
       </div>
 
-      <!-- Dual-Axis Badges -->
+      <!-- Test Execution Badges Row -->
       <div class="verdict-badges-row">
-        <div class="verdict-badge" id="badge-detection" data-tooltip="Axis 1: Checks whether the selected line matches the seeded defect">
-          <span class="badge-subtitle">Axis 1: Detection</span>
-          <span class="badge-main-text" id="detection-text">Line Check</span>
+        <div class="verdict-badge" id="badge-detection" data-tooltip="Deterministic sandbox test execution status">
+          <span class="badge-subtitle">Status</span>
+          <span class="badge-main-text" id="detection-text">Evaluating...</span>
         </div>
-        <div class="verdict-badge" id="badge-comprehension" data-tooltip="Axis 2: Zhao et al. zero-leakage conceptual comprehension rubric (0 to 3)">
-          <span class="badge-subtitle">Axis 2: Comprehension</span>
-          <span class="badge-main-text" id="comprehension-text">Score 0 / 3</span>
+        <div class="verdict-badge" id="badge-comprehension" data-tooltip="Unit and edge-case tests passed">
+          <span class="badge-subtitle">Tests Passed</span>
+          <span class="badge-main-text" id="comprehension-text">0 / 0</span>
         </div>
       </div>
 
@@ -436,7 +572,7 @@
 
       <!-- Pedagogical CoT Feedback (Zhao et al.) -->
       <div class="feedback-card">
-        <div class="feedback-label">Pedagogical Diagnostic Clue (Zero-Leakage):</div>
+        <div class="feedback-label">Sandbox Test Execution Output:</div>
         <p class="feedback-body" id="modal-feedback">Feedback message...</p>
       </div>
 
@@ -502,112 +638,123 @@
 
       <div class="modal-actions">
         <button class="btn btn-secondary" id="btn-close-modal">Inspect Code</button>
-        <button class="btn btn-primary btn-cta" id="btn-next-challenge">Next Challenge</button>
+        <button class="btn btn-primary btn-cta" id="btn-next-challenge">Return to Problems Menu</button>
       </div>
     </div>
   </div>
 
-  <!-- 4. Platform Stats Modal -->
+  <!-- 4. Clean Platform Stats Modal (Only Total Solved & Total Points) -->
   <div class="modal-backdrop" id="stats-modal" style="display: none;">
-    <div class="modal-card stats-card">
+    <div class="modal-card stats-card" style="max-width: 520px;">
       <div class="modal-header">
-        <span class="card-tag">Telemetry & Verification Audit</span>
-        <h2 class="modal-title">Platform Performance & Security</h2>
+        <span class="card-tag">Engineer Arena Telemetry</span>
+        <h2 class="modal-title">Performance Summary</h2>
+        <p class="modal-subtitle" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+          Your all-time verified codebase debugging records.
+        </p>
       </div>
 
-      <div class="stats-grid" id="stats-content">
-        <div class="stat-box">
-          <span class="stat-number" id="stat-pass-rate">100%</span>
-          <span class="stat-label">Harness Verification Pass Rate</span>
+      <div class="clean-stats-grid">
+        <div class="clean-stat-card">
+          <div class="clean-stat-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <div class="clean-stat-info">
+            <span class="clean-stat-number" id="stats-total-solved">0</span>
+            <span class="clean-stat-label">Total Problems Solved</span>
+          </div>
         </div>
-        <div class="stat-box">
-          <span class="stat-number" id="stat-leak-rate">0.0%</span>
-          <span class="stat-label">Adversarial Leakage Rate (Zhao et al.)</span>
-        </div>
-        <div class="stat-box">
-          <span class="stat-number" id="stat-total-attempts">0</span>
-          <span class="stat-label">Total Student Attempts Logged</span>
+        <div class="clean-stat-card">
+          <div class="clean-stat-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+          </div>
+          <div class="clean-stat-info">
+            <span class="clean-stat-number" id="stats-total-points">0</span>
+            <span class="clean-stat-label">Total Points Earned</span>
+          </div>
         </div>
       </div>
 
-      <div class="modal-actions">
-        <button class="btn btn-primary" id="btn-close-stats">Close</button>
+      <div class="modal-actions" style="margin-top: 1.5rem;">
+        <button class="btn btn-primary" id="btn-close-stats" style="width: 100%;">Close</button>
       </div>
     </div>
   </div>
 
-  <!-- 4.1. Dynamic Session Memory Modal (memory.md) -->
-  <div class="modal-backdrop" id="memory-modal" style="display: none;">
-    <div class="modal-card memory-card">
-      <div class="modal-header">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
-          <div>
-            <span class="card-tag">Student Cognitive Profile</span>
-            <h2 class="modal-title">Dynamic Session Memory & Blind Spots</h2>
-          </div>
-          <span class="badge badge-streak" id="modal-memory-streak">🔥 Streak: 0</span>
-        </div>
+  <!-- 5. Feature 2: Anti-Stagnation Scaffold Nudge removed per user request -->
+
+  <!-- 5.1. Authentication Modal (Login & Sign Up) -->
+  <div class="modal-backdrop" id="auth-modal" style="display: none; z-index: 100000;">
+    <div class="modal-card auth-card">
+      <div class="auth-header">
+        <div class="card-tag">Reverse Code Arena</div>
+        <h2 class="modal-title" id="auth-title">Engineer Authentication</h2>
+        <p class="auth-subtitle" id="auth-subtitle">Log in to record your cognitive fault-localization streaks and dynamic memory profile.</p>
       </div>
 
-      <div class="memory-content-wrapper" id="memory-content-area">
-        <div class="memory-stats-grid">
-          <div class="stat-box">
-            <span class="stat-number" id="mem-stat-solved">0/0</span>
-            <span class="stat-label">Solved & Accuracy</span>
-          </div>
-          <div class="stat-box">
-            <span class="stat-number" id="mem-stat-streak">0</span>
-            <span class="stat-label">Current Verified Streak</span>
-          </div>
-          <div class="stat-box">
-            <span class="stat-number" id="mem-stat-target" style="font-size: 1.05rem; text-transform: lowercase;">scanning...</span>
-            <span class="stat-label">Adaptive Practice Focus</span>
-          </div>
-        </div>
-
-        <div class="memory-markdown-container">
-          <div class="memory-markdown-header">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-              <span class="file-icon">📄</span>
-              <span style="font-family: var(--font-mono); font-weight: 600; font-size: 0.82rem;">memory.md (Disk Engine Output)</span>
-            </div>
-            <button class="btn btn-secondary btn-sm" id="btn-download-memory" title="Download memory.md as local report">
-              📥 Export Markdown
-            </button>
-          </div>
-          <pre class="memory-markdown-viewer" id="memory-markdown-text">Loading session memory...</pre>
-        </div>
+      <!-- Auth Tab Navigation -->
+      <div class="auth-tabs" role="tablist">
+        <button type="button" class="auth-tab-btn active" id="tab-auth-login">Log In</button>
+        <button type="button" class="auth-tab-btn" id="tab-auth-signup">Create Account</button>
       </div>
 
-      <div class="modal-actions">
-        <button class="btn btn-primary" id="btn-close-memory">Return to Workbench</button>
-      </div>
+      <!-- Auth Error Notification Banner -->
+      <div class="auth-error-banner" id="auth-error-banner" style="display: none;"></div>
+
+      <!-- Auth Input Form -->
+      <form id="auth-form" autocomplete="off" onsubmit="return false;">
+        <div class="field-group">
+          <label for="auth-input-username">
+            <span class="field-title">Username</span>
+            <span class="field-desc">Letters, numbers, and underscores (3-20 chars)</span>
+          </label>
+          <input type="text" id="auth-input-username" class="text-input" placeholder="e.g. jatin, shivank, auditor_01" required />
+        </div>
+
+        <div class="field-group">
+          <label for="auth-input-password">
+            <span class="field-title">Password</span>
+            <span class="field-desc">Minimum 4 characters</span>
+          </label>
+          <input type="password" id="auth-input-password" class="text-input" placeholder="Enter password" required />
+        </div>
+
+        <div class="field-group" id="auth-group-confirm" style="display: none;">
+          <label for="auth-input-confirm">
+            <span class="field-title">Confirm Password</span>
+            <span class="field-desc">Re-enter password to verify</span>
+          </label>
+          <input type="password" id="auth-input-confirm" class="text-input" placeholder="Re-enter password" />
+        </div>
+
+        <div class="modal-actions" style="margin-top: 1.25rem;">
+          <button type="submit" class="btn btn-primary btn-cta" id="btn-auth-submit" style="width: 100%; justify-content: center; padding: 0.75rem 1.25rem;">
+            Log In to Workbench
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
-  <!-- 5. Feature 2: Anti-Stagnation Scaffold Nudge (Zhang Ch. 3 & 4) -->
-  <div class="stagnation-toast" id="stagnation-toast" style="display: none;">
-    <div class="stagnation-header">
-      <div style="display: flex; align-items: center; gap: 0.4rem;">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="16" x2="12" y2="12"></line>
-          <line x1="12" y1="8" x2="12.01" y2="8"></line>
-        </svg>
-        <strong>Cognitive Scaffolding Nudge (Zhang, 2026)</strong>
-      </div>
-      <button class="toast-close" id="toast-close">&times;</button>
-    </div>
-    <p id="stagnation-msg">
-      You have been reading for an extended period. Rather than repeatedly scanning the entire file, trace the first unit test input line-by-line from the entry point.
-    </p>
-  </div>
   <!-- 6. In-Page Toast Notification Container -->
   <div class="toast-container" id="toast-container"></div>
 
   <!-- 7. Celebration Overlay (confetti on full mastery) -->
   <canvas id="celebration-canvas" style="position:fixed;inset:0;pointer-events:none;z-index:99999;"></canvas>
 
-  <script src="app.js"></script>
+  <!-- CodeMirror 5 Core, Python Mode & Addons -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+
+  <!-- Pyodide Python WebAssembly Runtime -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+
+  <script src="app.js?v=4.3"></script>
 </body>
 </html>

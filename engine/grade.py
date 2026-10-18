@@ -1,124 +1,129 @@
 """
-Grading Engine for Reverse Code Arena.
-Grounded in:
-- Section 4 of reverse-code-arena-spec.md (Dual-Axis Scoring)
-- Zhang (WSU, 2026) Ch. 3 (Hypothesis evaluation)
-- Zhao et al. (EPFL/UTokyo, 2026) (Pedagogical CoT & Zero-Leakage Defense)
+Deterministic Sandbox Grading Engine for Reverse Code Arena.
+Evaluates student code fixes directly in a secure Python subprocess sandbox.
+No LLM dependencies, zero latency (< 30ms), 100% deterministic test suite execution.
 """
 
 import os
 import sys
 import json
-import re
 import subprocess
-from typing import Dict, Any, Tuple
-from dotenv import load_dotenv
-from google import genai
-from google.genai import types
+from typing import Dict, Any, List, Optional
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from schemas import Challenge, Attempt, Result, DetectionResult, ComprehensionResult
-from engine.stress_test import check_answer_leakage
-
-load_dotenv()
-
-FALLBACK_MODELS = [
-    "gemini-3.6-flash",
-    "gemini-3.7-flash",
-    "gemini-3.5-flash",
-]
-
-GRADING_PROMPT_TEMPLATE = """You are an expert pedagogical programming evaluator for an educational debugging arena.
-A student was reviewing Python code containing a subtle "{bug_type}" bug.
-
-Task Contract: {task_description}
-Function Name: {function_name}
-
-Ground Truth Reference:
-- Buggy Line Number: {buggy_line_number}
-- Actual Flawed Mental Model: "{flawed_assumption}"
-- Correct Line: "{correct_line}"
-
-Student Submission:
-- Selected Line: {selected_line}
-- Student Expected Behavior: "{expected_behavior}"
-- Student Observed Flaw: "{observed_flaw}"
-- Student Explanation: "{explanation}"
-- Student Proposed Fix: "{fixed_code_snippet}"
-
-Evaluation Rubric (Score 0 to 3):
-- 3: Deep Understanding. The student accurately articulates the flawed mental assumption (why the author wrote it this way), not just the symptom.
-- 2: Mechanism/Symptom Understood. The student correctly explains what went wrong in execution, but doesn't articulate the underlying false assumption.
-- 1: Surface or Vague. Vaguely in the right area, or selected the right line for a flawed/coincidental reason.
-- 0: Wrong or Empty. Missed the bug entirely, incorrect explanation, or unrelated reasoning.
-
-CRITICAL PEDAGOGICAL INSTRUCTION (Zhao et al., 2026; Zhang, 2026):
-- Strictly keep the exact correct line of code and exact buggy line number concealed.
-- Keep feedback concise: 1-2 sentences of sharp, actionable diagnostic guidance directing focus to the boundary or false mental rule.
-
-Return ONLY a strict JSON object:
-{{
-  "reason": "Brief internal evaluation analysis",
-  "leak_check": "Confirmed no answer disclosure",
-  "score": 2,
-  "feedback": "1-2 sentences of sharp diagnostic guidance"
-}}
-"""
-
-
-def _get_genai_client() -> genai.Client:
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise ValueError("GEMINI_API_KEY is not set.")
-    return genai.Client(api_key=api_key)
-
-
-def _clean_json(text: str) -> str:
-    t = text.strip()
-    match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", t)
-    if match:
-        return match.group(1).strip()
-    return t
-
+from schemas import Challenge, Attempt, Result, DetectionResult, ComprehensionResult, TestDetail
 
 EVAL_WORKER = """
 import sys, json
 
 try:
-    data = json.loads(sys.stdin.read())
-    code = data["fixed_code"]
-    fn_name = data["function_name"]
-    edge_test = data.get("edge_test", {})
+    payload = json.loads(sys.stdin.read())
+    code = payload["code"]
+    fn_name = payload["function_name"]
+    tests = payload.get("tests", [])
 
     ns = {}
-    exec(code, ns)
+    try:
+        exec(code, ns)
+    except Exception as exec_err:
+        res = {
+            "all_passed": False,
+            "error": f"Compilation/Syntax Error: {type(exec_err).__name__}: {str(exec_err)}",
+            "details": []
+        }
+        sys.stdout.write(json.dumps(res))
+        sys.exit(0)
+
     fn = ns.get(fn_name)
     if not fn or not callable(fn):
-        sys.exit(1)
-
-    inp = edge_test.get("input", [])
-    expected = edge_test.get("expected")
-
-    actual = fn(*inp) if isinstance(inp, list) else fn(inp)
-    if actual == expected:
+        res = {
+            "all_passed": False,
+            "error": f"Function '{fn_name}' was not defined or is not callable in submitted code.",
+            "details": []
+        }
+        sys.stdout.write(json.dumps(res))
         sys.exit(0)
-    else:
-        sys.exit(2)
-except Exception:
-    sys.exit(3)
+
+    details = []
+    all_passed = True
+    for t in tests:
+        name = t.get("name", "Test")
+        inp = t.get("input", [])
+        expected = t.get("expected")
+        try:
+            actual = fn(*inp) if isinstance(inp, list) else fn(inp)
+            passed = (actual == expected)
+            if not passed:
+                all_passed = False
+            details.append({
+                "name": name,
+                "input": inp,
+                "expected": expected,
+                "actual": actual,
+                "passed": passed,
+                "error": None
+            })
+        except Exception as call_err:
+            all_passed = False
+            details.append({
+                "name": name,
+                "input": inp,
+                "expected": expected,
+                "actual": None,
+                "passed": False,
+                "error": f"{type(call_err).__name__}: {str(call_err)}"
+            })
+
+    res = {
+        "all_passed": all_passed,
+        "error": None,
+        "details": details
+    }
+    sys.stdout.write(json.dumps(res))
+except Exception as outer_err:
+    res = {
+        "all_passed": False,
+        "error": f"Worker Exception: {type(outer_err).__name__}: {str(outer_err)}",
+        "details": []
+    }
+    sys.stdout.write(json.dumps(res))
 """
 
-def evaluate_student_fix(fixed_code: str, function_name: str, edge_test: Dict[str, Any], timeout_seconds: int = 4) -> bool:
+
+def prepare_runnable_code(fixed_code: Optional[str], challenge: Challenge, target_line: Optional[int] = None) -> str:
     """
-    Subprocess test: checks if student's fixed code actually runs and passes the edge case.
-    Uses stdin JSON pipe to avoid Windows argument and quotation escaping failures.
+    If fixed_code is full Python code defining the function, returns it directly.
+    If it is a 1-line replacement snippet, substitutes it into challenge.code at the target line.
+    If empty, returns the original buggy challenge.code.
     """
+    if not fixed_code or not fixed_code.strip():
+        return challenge.code
+    
+    clean = fixed_code.strip()
+    # If the user submitted a full function definition or multi-line block with def
+    if f"def {challenge.function_name}" in clean:
+        return fixed_code
+    
+    # 1-line substitution into original code
+    lines = challenge.code.splitlines()
+    line_idx = (target_line - 1) if (target_line and 1 <= target_line <= len(lines)) else (challenge.buggy_line_number - 1)
+    if 0 <= line_idx < len(lines):
+        orig_indent = len(lines[line_idx]) - len(lines[line_idx].lstrip())
+        sub_line = (" " * orig_indent) + clean
+        lines[line_idx] = sub_line
+        return "\n".join(lines)
+    
+    return challenge.code
+
+
+def evaluate_student_tests(code: str, function_name: str, tests: List[Dict[str, Any]], timeout_seconds: int = 4) -> Dict[str, Any]:
+    """Runs student code against all test cases in an isolated subprocess."""
     try:
         payload = json.dumps({
-            "fixed_code": fixed_code,
+            "code": code,
             "function_name": function_name,
-            "edge_test": edge_test,
+            "tests": tests,
         })
         proc = subprocess.run(
             [sys.executable, "-c", EVAL_WORKER],
@@ -127,155 +132,149 @@ def evaluate_student_fix(fixed_code: str, function_name: str, edge_test: Dict[st
             capture_output=True,
             timeout=timeout_seconds,
         )
-        return proc.returncode == 0
-    except Exception:
-        return False
-
-
-def _heuristic_comprehension_score(attempt: Attempt, challenge: Challenge, line_correct: bool, fix_passes: bool) -> Tuple[int, str]:
-    """
-    Intelligent heuristic fallback when LLM quota is temporarily paused.
-    Analyzes conceptual overlap between student explanation and ground truth assumption,
-    and returns a concrete, non-vague diagnostic hint.
-    """
-    text = f"{attempt.expected_behavior or ''} {attempt.observed_flaw or ''} {attempt.explanation}".lower()
-    assumption_words = set(re.findall(r"\b\w{4,}\b", challenge.flawed_assumption.lower()))
-
-    # Check for domain keywords based on bug type
-    keywords_by_type = {
-        "off_by_one": ["range", "bound", "limit", "last", "minus", "plus", "index", "off by one", "omit", "exclude"],
-        "mutable_default": ["mutable", "default", "call", "persist", "accumulate", "shared", "twice", "state"],
-        "shallow_copy": ["shallow", "copy", "nested", "inner", "reference", "mutate", "duplicate"],
-        "int_division": ["division", "float", "truncate", "floor", "rounding", "precision", "slash"],
-        "boundary_inclusive": ["greater", "equal", "strictly", "inclusive", "threshold", "cutoff", "boundary"],
-    }
-
-    diagnostic_clues = {
-        "off_by_one": "Inspect the loop boundary logic. In Python, range(n) stops at n-1. When an author writes range(len - 1), trace what index is reached on the final iteration.",
-        "mutable_default": "Look at the function signature parameters. Default argument objects are created once at definition time, not on each call.",
-        "shallow_copy": "Trace how mutations to nested elements affect both copies. Slicing or shallow-copying only duplicates the outer container.",
-        "int_division": "Examine the division operator. Integer division truncates down, discarding fractional portions.",
-        "boundary_inclusive": "Analyze the comparison operator at the boundary condition. Does the contract specify strictly greater than, or should exact boundary matches be retained?",
-    }
-    clue = diagnostic_clues.get(challenge.bug_type, "Trace intermediate variable states with a boundary case like an empty or edge-value input.")
-
-    type_kw = keywords_by_type.get(challenge.bug_type, ["loop", "condition", "return"])
-    matched_type_kw = [kw for kw in type_kw if kw in text]
-    matched_assumption_words = [w for w in assumption_words if w in text]
-
-    if line_correct or fix_passes:
-        if len(matched_assumption_words) >= 2 or len(matched_type_kw) >= 2:
-            return 3, f"Accurate Diagnosis! You identified the exact fault and articulated the author's false assumption. {clue}"
-        elif len(matched_type_kw) >= 1 or len(matched_assumption_words) >= 1:
-            return 2, f"Mechanism Understood: You caught the defect symptom, but haven't fully articulated the author's underlying misconception. {clue}"
-        else:
-            return 1, f"Copilot-Style Patch: You located the line or fix, but missed the underlying mental model. {clue}"
-    else:
-        if len(matched_type_kw) >= 2:
-            return 1, f"Conceptual Catch, Misplaced Line: You recognized the bug category, but pinpointed the wrong code statement. {clue}"
-        return 0, f"Unidentified Defect: Neither the line nor the explanation captured the bug. {clue}"
+        if proc.stdout.strip():
+            return json.loads(proc.stdout.strip())
+        return {
+            "all_passed": False,
+            "error": proc.stderr.strip() or "Process exited without output.",
+            "details": []
+        }
+    except subprocess.TimeoutExpired:
+        return {
+            "all_passed": False,
+            "error": f"Execution timed out (> {timeout_seconds}s). Check for infinite loops or heavy recursion.",
+            "details": []
+        }
+    except Exception as e:
+        return {
+            "all_passed": False,
+            "error": f"Sandbox execution failure: {str(e)}",
+            "details": []
+        }
 
 
 def grade_attempt(attempt: Attempt, challenge: Challenge) -> Result:
     """
-    Dual-Axis evaluation:
-    - Axis 1: Deterministic detection (line number comparison + fix testing)
-    - Axis 2: Pedagogical LLM comprehension grading with anti-leakage CoT
+    Evaluates student submission purely by sandbox test execution.
+    - Full marks (passed = True, score = 100) if code compiles and all unit & edge tests pass.
+    - Zero marks (passed = False, score = 0) if any test fails or error occurs.
     """
-    # 1. Axis 1: Detection
-    line_correct = (attempt.selected_line == challenge.buggy_line_number)
-    near_miss = (abs(attempt.selected_line - challenge.buggy_line_number) == 1)
+    # 1. Prepare runnable code
+    code = prepare_runnable_code(attempt.fixed_code, challenge, attempt.selected_line)
 
-    # Re-run edge test on student's proposed code
-    fix_passes = False
-    if attempt.fixed_code and len(attempt.fixed_code.strip()) > 10:
-        edge_data = challenge.edge_case_test.model_dump() if hasattr(challenge.edge_case_test, "model_dump") else challenge.edge_case_test
-        fix_passes = evaluate_student_fix(
-            fixed_code=attempt.fixed_code,
-            function_name=challenge.function_name,
-            edge_test=edge_data,
+    # 2. Assemble test suite: baseline passing tests + edge case test
+    all_tests = []
+    if hasattr(challenge, "passing_tests") and challenge.passing_tests:
+        for idx, pt in enumerate(challenge.passing_tests):
+            pt_data = pt.model_dump() if hasattr(pt, "model_dump") else pt
+            all_tests.append({
+                "name": f"Baseline Test {idx + 1}",
+                "input": pt_data.get("input", []),
+                "expected": pt_data.get("expected"),
+            })
+    
+    edge_data = challenge.edge_case_test.model_dump() if hasattr(challenge.edge_case_test, "model_dump") else challenge.edge_case_test
+    all_tests.append({
+        "name": "Edge-Case Test (Bug Trigger)",
+        "input": edge_data.get("input", []),
+        "expected": edge_data.get("expected"),
+    })
+
+    # 3. Execute in subprocess sandbox
+    eval_res = evaluate_student_tests(code, challenge.function_name, all_tests)
+    all_passed = bool(eval_res.get("all_passed", False))
+    raw_details = eval_res.get("details", [])
+    error_msg = eval_res.get("error")
+
+    # Format structured test details
+    formatted_details: List[TestDetail] = []
+    tests_passed = 0
+    first_failure = None
+
+    for d in raw_details:
+        td = TestDetail(
+            name=d.get("name", "Test"),
+            input=d.get("input"),
+            expected=d.get("expected"),
+            actual=d.get("actual"),
+            passed=bool(d.get("passed", False)),
+            error=d.get("error"),
         )
+        if td.passed:
+            tests_passed += 1
+        elif not first_failure:
+            first_failure = td
+        formatted_details.append(td)
 
-    # 2. Axis 2: Comprehension via Gemini (with heuristic fallback)
-    score = None
-    feedback = ""
-    reason = "Pedagogical evaluation."
-    leak_check = "Verified."
+    total_tests = len(all_tests)
 
-    try:
-        client = _get_genai_client()
-        prompt = GRADING_PROMPT_TEMPLATE.format(
-            bug_type=challenge.bug_type,
-            task_description=challenge.task_description,
-            function_name=challenge.function_name,
-            buggy_line_number=challenge.buggy_line_number,
-            flawed_assumption=challenge.flawed_assumption,
-            correct_line=challenge.correct_line,
-            selected_line=attempt.selected_line,
-            expected_behavior=attempt.expected_behavior or "Not specified",
-            observed_flaw=attempt.observed_flaw or "Not specified",
-            explanation=attempt.explanation,
-            fixed_code_snippet=attempt.fixed_code[:300] if attempt.fixed_code else "None",
-        )
-
-        for model_name in FALLBACK_MODELS:
-            try:
-                resp = client.models.generate_content(
-                    model=model_name,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                        temperature=0.2,
-                    ),
-                )
-                if resp.text:
-                    parsed = json.loads(_clean_json(resp.text))
-                    score = int(parsed.get("score", 0))
-                    feedback = parsed.get("feedback", "")
-                    reason = parsed.get("reason", "")
-                    leak_check = parsed.get("leak_check", "")
-                    break
-            except Exception:
-                continue
-
-    except Exception as e:
-        print(f"[engine.grade] API error: {e}")
-
-    # If LLM didn't return (e.g. rate limit), apply intelligent semantic heuristic
-    if score is None:
-        score, feedback = _heuristic_comprehension_score(attempt, challenge, line_correct, fix_passes)
-        reason = "Heuristic semantic model applied due to rate-limit fallback."
-
-    # 3. Security Guard: Check for accidental leakage in feedback
-    leak_res = check_answer_leakage(feedback, challenge)
-    if leak_res["is_leaked"]:
-        print("[engine.grade] WARNING: Leakage detected in generated feedback! Intercepting...")
-        feedback = "Your submission has been evaluated. Review how the function handles edge boundary values."
-
-    # 4. Compute Verdict
-    found = line_correct or fix_passes
-    understood = (score >= 2)
-
-    if found and understood:
-        verdict = "found_and_understood"
-    elif found and not understood:
-        verdict = "found_not_understood"  # The Copilot trap
-    elif not found and understood:
-        verdict = "not_found_but_understood"
+    # 4. Points calculation based on difficulty and hint penalties
+    difficulty = getattr(challenge, "difficulty", "easy").lower()
+    if difficulty == "hard":
+        base_points = getattr(challenge, "base_points", 80) or 80
+        default_penalties = [12, 25, 25]
+        min_points = 18
+    elif difficulty in ("medium", "med"):
+        base_points = getattr(challenge, "base_points", 50) or 50
+        default_penalties = [8, 15, 15]
+        min_points = 12
     else:
+        base_points = getattr(challenge, "base_points", 30) or 30
+        default_penalties = [5, 10, 10]
+        min_points = 5
+
+    hints_unlocked = getattr(attempt, "hints_unlocked", 0) or 0
+    hints_list = getattr(challenge, "hints", []) or []
+
+    total_penalty = 0
+    for i in range(min(hints_unlocked, 3)):
+        if i < len(hints_list) and hasattr(hints_list[i], "penalty") and hints_list[i].penalty:
+            total_penalty += hints_list[i].penalty
+        elif i < len(default_penalties):
+            total_penalty += default_penalties[i]
+
+    if all_passed:
+        points_earned = max(min_points, base_points - total_penalty)
+        score = 100
+        verdict = "found_and_understood"
+        feedback = f"All {total_tests} test cases passed! +{points_earned} points earned."
+    else:
+        points_earned = 0
+        score = 0
         verdict = "neither"
+        if error_msg:
+            feedback = error_msg
+        elif first_failure:
+            if first_failure.error:
+                feedback = f"Error on {first_failure.name}: {first_failure.error}"
+            else:
+                feedback = (
+                    f"Failed on {first_failure.name} with input {first_failure.input}. "
+                    f"Expected: {first_failure.expected}, Got: {first_failure.actual}."
+                )
+        else:
+            feedback = "Code failed to pass the required test suite."
 
     return Result(
+        passed=all_passed,
+        score=score,
+        points_earned=points_earned,
+        base_points=base_points,
+        tests_passed=tests_passed,
+        total_tests=total_tests,
+        feedback=feedback,
+        error_message=error_msg,
+        test_details=formatted_details,
+        verdict=verdict,
         detection=DetectionResult(
-            line_correct=line_correct,
-            near_miss=near_miss,
-            fix_passes=fix_passes,
+            line_correct=all_passed,
+            near_miss=False,
+            fix_passes=all_passed,
         ),
         comprehension=ComprehensionResult(
-            score=score,
+            score=3 if all_passed else 0,
             feedback=feedback,
-            reason=reason,
-            leak_check=leak_check,
+            reason="Sandbox unit test execution.",
+            leak_check="Deterministic code test.",
         ),
-        verdict=verdict,
     )

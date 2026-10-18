@@ -219,7 +219,7 @@ if __name__ == "__main__":
         }
         with open("data/adversarial_audit.json", "w", encoding="utf-8") as f:
             json.dump(consolidated, f, indent=2)
-        print("\n✅ Full adversarial audit saved to data/adversarial_audit.json")
+        print("\nFull adversarial audit saved to data/adversarial_audit.json")
     else:
         # Default: run against first seeded challenge
         with open("data/seeded.json", "r", encoding="utf-8") as f:
