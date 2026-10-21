@@ -1,3 +1,12 @@
+import sys
+import os
+from pathlib import Path
+
+# Ensure root directory is in sys.path when executed directly
+_ROOT_DIR = str(Path(__file__).resolve().parent.parent)
+if _ROOT_DIR not in sys.path:
+    sys.path.insert(0, _ROOT_DIR)
+
 from fastapi import FastAPI, Query, Request, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -533,3 +542,9 @@ if os.path.exists(WEB_DIR):
     app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
 elif os.path.exists("web"):
     app.mount("/", StaticFiles(directory="web", html=True), name="web")
+
+
+if __name__ == '__main__':
+    import uvicorn
+    print('Starting Reverse Code Arena server on http://127.0.0.1:8000 ...')
+    uvicorn.run('api.main:app', host='127.0.0.1', port=8000, reload=True)
