@@ -410,43 +410,6 @@ function playCelebration() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Global search shortcut (Ctrl+K, Cmd+K, or /)
-  window.addEventListener('keydown', (e) => {
-    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
-    const isInput = tag === 'input' || tag === 'textarea' || (e.target && e.target.closest && e.target.closest('.CodeMirror'));
-
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-      e.preventDefault();
-      const searchInput = document.getElementById('catalog-search-input');
-      if (searchInput) {
-        switchView('catalog');
-        searchInput.focus();
-        searchInput.select();
-      }
-    } else if (e.key === '/' && !isInput) {
-      e.preventDefault();
-      const searchInput = document.getElementById('catalog-search-input');
-      if (searchInput) {
-        switchView('catalog');
-        searchInput.focus();
-      }
-    }
-  });
-
-  const searchInputEl = document.getElementById('catalog-search-input');
-  if (searchInputEl) {
-    searchInputEl.addEventListener('input', () => {
-      const parentBox = searchInputEl.closest('.catalog-search-box');
-      if (parentBox) {
-        if (searchInputEl.value.trim().length > 0) {
-          parentBox.classList.add('has-val');
-        } else {
-          parentBox.classList.remove('has-val');
-        }
-      }
-    });
-  }
-
   initWorkbench();
 });
 
@@ -921,22 +884,6 @@ async function loadCatalog(showAfterLoad = true) {
     if (progressFill) {
       const pct = Math.min(100, Math.round((totalSolved / totalCount) * 100));
       progressFill.style.width = `${pct}%`;
-    }
-
-    const streakEl = document.getElementById('catalog-stat-streak');
-    if (streakEl) streakEl.textContent = catalogUserStats.streak || 0;
-
-    const accuracyEl = document.getElementById('catalog-stat-accuracy');
-    if (accuracyEl) accuracyEl.textContent = `${catalogUserStats.accuracy || 0}%`;
-
-    const nextUntested = catalogChallenges.find(c => !c.is_solved) || catalogChallenges[0];
-    const jumpBtn = document.getElementById('btn-jump-untested');
-    const jumpTargetTitle = document.getElementById('jump-target-title');
-    if (jumpTargetTitle && nextUntested) {
-      jumpTargetTitle.textContent = `(${escapeHtml(nextUntested.title)})`;
-    }
-    if (jumpBtn && nextUntested) {
-      jumpBtn.onclick = () => selectProblem(nextUntested.id);
     }
 
     // Update topbar points
