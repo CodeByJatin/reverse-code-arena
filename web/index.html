@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css" />
-  <link rel="stylesheet" href="style.css?v=4.4" />
+  <link rel="stylesheet" href="style.css?v=4.5" />
 </head>
 <body>
   <div class="workbench">
@@ -108,6 +108,13 @@
                 <button class="btn btn-tool btn-catalog-auth" id="btn-catalog-auth" title="Switch or log in user" style="padding: 0.2rem 0.6rem; font-size: 0.72rem;">Switch User</button>
                 <button class="btn btn-tool btn-catalog-logout" id="btn-catalog-logout" title="Log out" style="padding: 0.2rem 0.6rem; font-size: 0.72rem; display: none;">Exit</button>
               </div>
+              <div class="catalog-hero-cta" style="margin-top: 0.75rem;">
+                <button class="btn btn-primary btn-jump-untested" id="btn-jump-untested" title="Launch next unsolved challenge">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                  <span>Jump to Next Untested Bug</span>
+                  <span class="jump-shortcut-hint" id="jump-target-title"></span>
+                </button>
+              </div>
             </div>
           </div>
           <div class="catalog-hero-stats">
@@ -130,6 +137,21 @@
               </div>
               <span class="catalog-stat-sub">Verified Solutions</span>
             </div>
+            <div class="catalog-hero-stat-card">
+              <span class="catalog-stat-label">Active Streak</span>
+              <div class="catalog-stat-metric">
+                <span class="catalog-stat-num" id="catalog-stat-streak" style="color: #f97316;">0</span>
+                <span class="catalog-points-unit" style="color: #fb923c;">bugs</span>
+              </div>
+              <span class="catalog-stat-sub">Consecutive Passes</span>
+            </div>
+            <div class="catalog-hero-stat-card">
+              <span class="catalog-stat-label">Audit Accuracy</span>
+              <div class="catalog-stat-metric">
+                <span class="catalog-stat-num" id="catalog-stat-accuracy" style="color: #38bdf8;">0%</span>
+              </div>
+              <span class="catalog-stat-sub">Precision Rate</span>
+            </div>
           </div>
         </section>
 
@@ -144,6 +166,9 @@
               </svg>
               <input type="text" id="catalog-search-input" placeholder="Search problems by title, module, or keyword..." autocomplete="off" />
               <button id="btn-catalog-clear-search" class="catalog-clear-btn" title="Clear search" style="display: none;">&times;</button>
+              <div class="search-kbd-shortcut" id="catalog-search-kbd" title="Press Ctrl+K or / to search">
+                <kbd class="kbd-key">Ctrl</kbd><kbd class="kbd-key">K</kbd>
+              </div>
             </div>
 
             <!-- Status Filter Pills -->
@@ -421,9 +446,17 @@
         <!-- Upper Section: Code Inspector Editor -->
         <div class="code-inspector-panel">
           <div class="editor-header">
-            <div class="editor-tab active">
-              <span class="lang-tag">PY</span>
-              <span class="tab-filename">solution.py</span>
+            <div class="editor-tabs-bar" id="editor-tabs-bar">
+              <div class="editor-tab active" data-file="solution.py" title="solution.py (Active)">
+                <svg class="file-icon file-icon-py" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                <span class="tab-filename">solution.py</span>
+                <span class="tab-hairline"></span>
+              </div>
             </div>
             <div class="editor-actions">
               <button type="button" class="btn btn-tool btn-xs" id="btn-editor-run" title="Run code with custom input">
@@ -755,6 +788,6 @@
   <!-- Pyodide Python WebAssembly Runtime -->
   <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
 
-  <script src="app.js?v=4.4"></script>
+  <script src="app.js?v=4.5"></script>
 </body>
 </html>

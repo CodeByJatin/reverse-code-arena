@@ -1406,15 +1406,22 @@ body.theme-light .clean-stat-label {
 }
 
 .editor-header {
-  height: 42px;
+  height: 38px;
   background: var(--bg-glass-gutter);
   border-bottom: 1px solid var(--border-glass);
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
-  padding: 0 0.85rem;
+  padding: 0 0.85rem 0 0;
   box-sizing: border-box;
   flex-shrink: 0;
+}
+
+.editor-tabs-bar {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  gap: 1px;
 }
 
 .editor-actions {
@@ -1425,27 +1432,81 @@ body.theme-light .clean-stat-label {
 }
 
 .editor-tab {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.45rem;
+  padding: 0 1rem;
+  height: 100%;
+  cursor: pointer;
+  position: relative;
   font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: var(--text-secondary);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  background: transparent;
+  border-right: 1px solid var(--border-glass);
+  transition: all 0.15s ease;
+  user-select: none;
 }
 
-body.theme-light .editor-tab {
-  color: #1c1917;
+.editor-tab:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.editor-tab.active {
+  color: var(--text-main);
   font-weight: 600;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.editor-tab.active::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #6366f1;
+  box-shadow: 0 -1px 8px rgba(99, 102, 241, 0.6);
+}
+
+.file-icon {
+  color: #38bdf8;
+  flex-shrink: 0;
 }
 
 .tab-filename {
   font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: var(--text-secondary);
+  font-size: 0.78rem;
+  color: inherit;
+}
+
+body.theme-light .editor-tab {
+  border-right-color: #e2e8f0;
+  color: #64748b;
+}
+
+body.theme-light .editor-tab:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+body.theme-light .editor-tab.active {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+body.theme-light .editor-tab.active::after {
+  background: #4f46e5;
+  box-shadow: none;
+}
+
+body.theme-light .file-icon {
+  color: #0284c7;
 }
 
 body.theme-light .tab-filename {
-  color: #1c1917;
+  color: inherit;
   font-weight: 600;
 }
 
@@ -3407,10 +3468,62 @@ body.theme-light .catalog-view {
   justify-content: space-between;
   gap: 2rem;
   padding: 1.75rem 2rem;
-  background: #141416;
+  background: linear-gradient(135deg, #131316 0%, #1a1a20 50%, #101014 100%);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-lg, 12px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.catalog-hero-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.4), transparent);
+  pointer-events: none;
+}
+
+body.theme-light .catalog-hero-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+body.theme-light .catalog-hero-card::after {
+  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.2), transparent);
+}
+
+.btn-jump-untested {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.42rem 0.95rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  color: #ffffff;
+  border: 1px solid rgba(165, 180, 252, 0.35);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-jump-untested:hover {
+  background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.45);
+}
+
+.jump-shortcut-hint {
+  font-size: 0.72rem;
+  opacity: 0.85;
+  font-weight: 500;
+  color: #c7d2fe;
 }
 
 .catalog-hero-left {
@@ -3560,6 +3673,42 @@ body.theme-light .catalog-view {
   position: relative;
   display: flex;
   align-items: center;
+}
+
+.search-kbd-shortcut {
+  position: absolute;
+  right: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  pointer-events: none;
+  user-select: none;
+  transition: opacity 0.15s ease;
+}
+
+.catalog-search-box:focus-within .search-kbd-shortcut,
+.catalog-search-box.has-val .search-kbd-shortcut {
+  opacity: 0;
+}
+
+.kbd-key {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.12rem 0.35rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-muted);
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+body.theme-light .kbd-key {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #64748b;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .catalog-search-box svg {

@@ -286,6 +286,11 @@ def get_challenges_catalog(request: Request):
     solved_ids = set(stats.get("solved_challenge_ids", []))
     solved_points_map = stats.get("solved_points", {})
 
+    mem_state = get_memory_state(username=user)
+    mem_stats = mem_state.get("stats", {})
+    current_streak = mem_stats.get("current_streak", 0)
+    audit_accuracy = mem_stats.get("overall_accuracy", 0.0)
+
     seeded = _load_seeded_challenges()
     catalog_items = []
     topics_set = set()
@@ -323,6 +328,8 @@ def get_challenges_catalog(request: Request):
             "username": user,
             "total_solved": stats.get("total_solved", 0),
             "total_points": stats.get("total_points", 0),
+            "streak": current_streak,
+            "accuracy": audit_accuracy,
         },
         available_languages=["python", "c++", "java", "javascript", "go"],
         available_topics=available_topics,
